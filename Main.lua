@@ -234,6 +234,8 @@ end
 function Library:NewSection(name)
     local section = {}
     section.__index = section
+    section.YOffset = 0
+    section.Sections = {}
     
     -- Create Tab Button
     local tabBtn = CreateButton(self.Content, {Size = UDim2.new(1, 0, 0, 30), Text = name})
@@ -268,126 +270,126 @@ function Library:NewSection(name)
     -- Element Creation Methods
     function section.NewButton(props)
         local btn = CreateButton(sectionFrame, props)
-        btn.Position = UDim2.new(0, 0, 0, #self.Sections * 35)
-        table.insert(self.Sections, btn)
+        btn.Position = UDim2.new(0, 0, 0, section.YOffset)
+        table.insert(section.Sections, btn)
+        section.YOffset = section.YOffset + 30
         return btn
     end
     
     function section.NewToggle(props)
         local toggle = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 30)})
         toggle.Name = "Toggle"
-        toggle.Position = UDim2.new(0, 0, 0, #self.Sections * 35)
-            -- Toggle Logic
-    local toggleState = false
-    local toggleBg = Instance.new("Frame")
-    toggleBg.BackgroundColor3 = Config.Theme.Primary
-    toggleBg.BorderSizePixel = 0
-    toggleBg.Size = UDim2.new(1, 0, 1, 0)
-    toggleBg.Name = "Background"
-    toggleBg.Parent = toggle
-    
-    local toggleCircle = Instance.new("Frame")
-    toggleCircle.BackgroundColor3 = Config.Theme.Text
-    toggleCircle.BorderSizePixel = 0
-    toggleCircle.Size = UDim2.new(0, 15, 0, 15)
-    toggleCircle.Position = UDim2.new(0, 5, 0, 5)
-    toggleCircle.Name = "Circle"
-    toggleCircle.Parent = toggle
-    
-    local toggleLabel = CreateLabel(toggle, {Text = props.Text or "Toggle", TextColor = Config.Theme.Text, TextSize = 14})
-    toggleLabel.Position = UDim2.new(0, 25, 0, 0)
-    toggleLabel.Size = UDim2.new(1, -25, 1, 0)
-    
-    toggle.MouseButton1Click:Connect(function()
-        toggleState = not toggleState
-        if toggleState then
-            toggleCircle.Position = UDim2.new(0, 15, 0, 5)
-            toggleCircle.BackgroundColor3 = Config.Theme.Accent
-        else
-            toggleCircle.Position = UDim2.new(0, 5, 0, 5)
-            toggleCircle.BackgroundColor3 = Config.Theme.Text
-        end
-        if props.Callback then props.Callback(toggleState) end
-    end)
-    
-    section.YOffset = (section.YOffset or 0) + 30
-    toggle.Position = UDim2.new(0, 0, 0, section.YOffset)
-    return toggle
-end
-
-function section.NewSlider(props)
-    local slider = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 40)})
-    slider.Name = "Slider"
-    slider.Position = UDim2.new(0, 0, 0, section.YOffset or 0)
-    
-    local label = CreateLabel(slider, {Text = props.Text or "Slider", TextColor = Config.Theme.Text, TextSize = 14})
-    label.Position = UDim2.new(0, 0, 0, 0)
-    
-    local sliderBg = Instance.new("Frame")
-    sliderBg.BackgroundColor3 = Config.Theme.Primary
-    sliderBg.BorderSizePixel = 0
-    sliderBg.Size = UDim2.new(1, -10, 0, 10)
-    sliderBg.Position = UDim2.new(0, 5, 0, 20)
-    sliderBg.Name = "Background"
-    sliderBg.Parent = slider
-    
-    local sliderHandle = Instance.new("Frame")
-    sliderHandle.BackgroundColor3 = Config.Theme.Accent
-    sliderHandle.BorderSizePixel = 0
-    sliderHandle.Size = UDim2.new(0, 10, 0, 10)
-    sliderHandle.Position = UDim2.new(0, 0, 0, 0)
-    sliderHandle.Name = "Handle"
-    sliderHandle.Parent = sliderBg
-    
-    local valueLabel = CreateLabel(slider, {Text = tostring(props.Value or 0), TextColor = Config.Theme.TextDim, TextSize = 12})
-    valueLabel.Position = UDim2.new(1, -30, 0, 20)
-    valueLabel.Size = UDim2.new(0, 30, 0, 10)
-    valueLabel.TextXAlignment = "Right"
-    
-    local dragging = false
-    local function updateSlider(input)
-        local relativeX = (input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X
-        relativeX = math.clamp(relativeX, 0, 1)
-        local value = math.floor(props.Min or 0 + relativeX * (props.Max or 100 - (props.Min or 0)))
-        sliderHandle.Position = UDim2.new(relativeX, -5, 0, 0)
-        valueLabel.Text = tostring(value)
-        if props.Callback then props.Callback(value) end
+        toggle.Position = UDim2.new(0, 0, 0, section.YOffset)
+        
+        local toggleState = false
+        local toggleBg = Instance.new("Frame")
+        toggleBg.BackgroundColor3 = Config.Theme.Primary
+        toggleBg.BorderSizePixel = 0
+        toggleBg.Size = UDim2.new(1, 0, 1, 0)
+        toggleBg.Name = "Background"
+        toggleBg.Parent = toggle
+        
+        local toggleCircle = Instance.new("Frame")
+        toggleCircle.BackgroundColor3 = Config.Theme.Text
+        toggleCircle.BorderSizePixel = 0
+        toggleCircle.Size = UDim2.new(0, 15, 0, 15)
+        toggleCircle.Position = UDim2.new(0, 5, 0, 5)
+        toggleCircle.Name = "Circle"
+        toggleCircle.Parent = toggle
+        
+        local toggleLabel = CreateLabel(toggle, {Text = props.Text or "Toggle", TextColor = Config.Theme.Text, TextSize = 14})
+        toggleLabel.Position = UDim2.new(0, 25, 0, 0)
+        toggleLabel.Size = UDim2.new(1, -25, 1, 0)
+        
+        toggle.MouseButton1Click:Connect(function()
+            toggleState = not toggleState
+            if toggleState then
+                toggleCircle.Position = UDim2.new(0, 15, 0, 5)
+                toggleCircle.BackgroundColor3 = Config.Theme.Accent
+            else
+                toggleCircle.Position = UDim2.new(0, 5, 0, 5)
+                toggleCircle.BackgroundColor3 = Config.Theme.Text
+            end
+            if props.Callback then props.Callback(toggleState) end
+        end)
+        
+        section.YOffset = section.YOffset + 30
+        return toggle
     end
     
-    sliderBg.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            updateSlider(input)
+    function section.NewSlider(props)
+        local slider = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 40)})
+        slider.Name = "Slider"
+        slider.Position = UDim2.new(0, 0, 0, section.YOffset)
+        
+        local label = CreateLabel(slider, {Text = props.Text or "Slider", TextColor = Config.Theme.Text, TextSize = 14})
+        label.Position = UDim2.new(0, 0, 0, 0)
+        
+        local sliderBg = Instance.new("Frame")
+        sliderBg.BackgroundColor3 = Config.Theme.Primary
+        sliderBg.BorderSizePixel = 0
+        sliderBg.Size = UDim2.new(1, -10, 0, 10)
+        sliderBg.Position = UDim2.new(0, 5, 0, 20)
+        sliderBg.Name = "Background"
+        sliderBg.Parent = slider
+        
+        local sliderHandle = Instance.new("Frame")
+        sliderHandle.BackgroundColor3 = Config.Theme.Accent
+        sliderHandle.BorderSizePixel = 0
+        sliderHandle.Size = UDim2.new(0, 10, 0, 10)
+        sliderHandle.Position = UDim2.new(0, 0, 0, 0)
+        sliderHandle.Name = "Handle"
+        sliderHandle.Parent = sliderBg
+        
+        local valueLabel = CreateLabel(slider, {Text = tostring(props.Value or 0), TextColor = Config.Theme.TextDim, TextSize = 12})
+        valueLabel.Position = UDim2.new(1, -30, 0, 20)
+        valueLabel.Size = UDim2.new(0, 30, 0, 10)
+        valueLabel.TextXAlignment = "Right"
+        
+        local dragging = false
+        local function updateSlider(input)
+            local relativeX = (input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X
+            relativeX = math.clamp(relativeX, 0, 1)
+            local value = math.floor(props.Min or 0 + relativeX * (props.Max or 100 - (props.Min or 0)))
+            sliderHandle.Position = UDim2.new(relativeX, -5, 0, 0)
+            valueLabel.Text = tostring(value)
+            if props.Callback then props.Callback(value) end
         end
-    end)
-    sliderBg.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            updateSlider(input)
-        end
-    end)
+        
+        sliderBg.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                updateSlider(input)
+            end
+        end)
+        sliderBg.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                updateSlider(input)
+            end
+        end)
+        
+        section.YOffset = section.YOffset + 40
+        return slider
+    end
     
-    section.YOffset = (section.YOffset or 0) + 40
-    return slider
-end
-
-function section.NewDropdown(props)
-    local dropdown = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 30)})
-    dropdown.Name = "Dropdown"
-    dropdown.Position = UDim2.new(0, 0, 0, section.YOffset or 0)
-    
-    local dropdownBg = Instance.new("Frame")
-    dropdownBg.BackgroundColor3 = Config.Theme.Primary
-    dropdownBg.BorderSizePixel = 0
-    dropdownBg.Size = UDim2.new(1, 0, 1, 0)
-    dropdownBg.Name = "Background"
-    dropdownBg.Parent = dropdown
-    
-    local dropdownLabel = CreateLabel(dropdown, {Text = props.Text or "Dropdown", TextColor = Config.Theme.Text, TextSize = 14})
+    function section.NewDropdown(props)
+        local dropdown = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 30)})
+        dropdown.Name = "Dropdown"
+        dropdown.Position = UDim2.new(0, 0, 0, section.YOffset)
+        
+        local dropdownBg = Instance.new("Frame")
+        dropdownBg.BackgroundColor3 = Config.Theme.Primary
+        dropdownBg.BorderSizePixel = 0
+        dropdownBg.Size = UDim2.new(1, 0, 1, 0)
+        dropdownBg.Name = "Background"
+        dropdownBg.Parent = dropdown
+        
+        local dropdownLabel = CreateLabel(dropdown, {Text = props.Text or "Dropdown", TextColor = Config.Theme.Text, TextSize = 14})
     dropdownLabel.Position = UDim2.new(0, 10, 0, 0)
     
     local dropdownValue = CreateLabel(dropdown, {Text = props.Default or "Select", TextColor = Config.Theme.TextDim, TextSize = 14})
@@ -412,13 +414,6 @@ function section.NewDropdown(props)
     
     dropdown.MouseButton1Click:Connect(toggleList)
     
-    -- Close list when clicking outside
-    local function closeList()
-        if dropdownList.Visible then
-            dropdownList.Visible = false
-        end
-    end
-    
     -- Add Options
     local options = props.Options or {}
     local optionButtons = {}
@@ -437,14 +432,14 @@ function section.NewDropdown(props)
     -- Auto-resize list
     dropdownList.Size = UDim2.new(1, 0, 0, math.max(0, #optionButtons * 25))
     
-    section.YOffset = (section.YOffset or 0) + 30
+    section.YOffset = section.YOffset + 30
     return dropdown
 end
 
 function section.NewTextBox(props)
     local textbox = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 30)})
     textbox.Name = "TextBox"
-    textbox.Position = UDim2.new(0, 0, 0, section.YOffset or 0)
+    textbox.Position = UDim2.new(0, 0, 0, section.YOffset)
     
     local label = CreateLabel(textbox, {Text = props.Text or "TextBox", TextColor = Config.Theme.Text, TextSize = 14})
     label.Position = UDim2.new(0, 0, 0, 0)
@@ -465,14 +460,14 @@ function section.NewTextBox(props)
         if props.Callback then props.Callback(input.Text, enterPressed) end
     end)
     
-    section.YOffset = (section.YOffset or 0) + 30
+    section.YOffset = section.YOffset + 30
     return textbox
 end
 
 function section.NewKeybind(props)
     local keybind = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 30)})
     keybind.Name = "Keybind"
-    keybind.Position = UDim2.new(0, 0, 0, section.YOffset or 0)
+    keybind.Position = UDim2.new(0, 0, 0, section.YOffset)
     
     local label = CreateLabel(keybind, {Text = props.Text or "Keybind", TextColor = Config.Theme.Text, TextSize = 14})
     label.Position = UDim2.new(0, 0, 0, 0)
@@ -508,9 +503,8 @@ function section.NewKeybind(props)
         end
     end)
     
-    section.YOffset = (section.YOffset or 0) + 30
+    section.YOffset = section.YOffset + 30
     return keybind
 end
 
--- Close the Library class
 return Library
