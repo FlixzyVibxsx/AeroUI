@@ -87,8 +87,10 @@ local function CreateButton(parent, props)
         TweenService:Create(bg, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
     end)
     
-    button.MouseButton1Click:Connect(function()
-        if props.Callback then props.Callback() end
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if props.Callback then props.Callback() end
+        end
     end)
     
     return button
@@ -187,8 +189,10 @@ function Library.new()
     closeBg.Size = UDim2.new(1, 0, 1, 0)
     closeBg.Name = "Background"
     closeBg.Parent = closeBtn
-    closeBtn.MouseButton1Down:Connect(function()
-        self:Destroy()
+    closeBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            self:Destroy()
+        end
     end)
     
     -- Dragging Logic
@@ -248,23 +252,25 @@ function Library:NewSection(name)
     sectionFrame.Visible = false
     
     -- Tab Switching Logic
-    tabBtn.MouseButton1Click:Connect(function()
-        -- Reset all tabs
-        for _, btn in ipairs(self.Content:GetChildren()) do
-            if btn.Name == "TabButton" then
-                btn.BackgroundTransparency = 1
+    tabBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            -- Reset all tabs
+            for _, btn in ipairs(self.Content:GetChildren()) do
+                if btn.Name == "TabButton" then
+                    btn.BackgroundTransparency = 1
+                end
             end
-        end
-        for _, sec in ipairs(self.Content:GetChildren()) do
-            if sec.Name == "Section" then
-                sec.Visible = false
+            for _, sec in ipairs(self.Content:GetChildren()) do
+                if sec.Name == "Section" then
+                    sec.Visible = false
+                end
             end
+            
+            -- Activate current
+            tabBtn.BackgroundTransparency = 0.5
+            sectionFrame.Visible = true
+            self.CurrentTab = section
         end
-        
-        -- Activate current
-        tabBtn.BackgroundTransparency = 0.5
-        sectionFrame.Visible = true
-        self.CurrentTab = section
     end)
     
     -- Element Creation Methods
@@ -301,16 +307,18 @@ function Library:NewSection(name)
         toggleLabel.Position = UDim2.new(0, 25, 0, 0)
         toggleLabel.Size = UDim2.new(1, -25, 1, 0)
         
-        toggle.MouseButton1Click:Connect(function()
-            toggleState = not toggleState
-            if toggleState then
-                toggleCircle.Position = UDim2.new(0, 15, 0, 5)
-                toggleCircle.BackgroundColor3 = Config.Theme.Accent
-            else
-                toggleCircle.Position = UDim2.new(0, 5, 0, 5)
-                toggleCircle.BackgroundColor3 = Config.Theme.Text
+        toggle.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                toggleState = not toggleState
+                if toggleState then
+                    toggleCircle.Position = UDim2.new(0, 15, 0, 5)
+                    toggleCircle.BackgroundColor3 = Config.Theme.Accent
+                else
+                    toggleCircle.Position = UDim2.new(0, 5, 0, 5)
+                    toggleCircle.BackgroundColor3 = Config.Theme.Text
+                end
+                if props.Callback then props.Callback(toggleState) end
             end
-            if props.Callback then props.Callback(toggleState) end
         end)
         
         section.YOffset = section.YOffset + 30
@@ -380,7 +388,7 @@ function Library:NewSection(name)
     function section.NewDropdown(props)
         local dropdown = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 30)})
         dropdown.Name = "Dropdown"
-        dropdown.Position = UDim2.new(0, 0, 0, section.YOffset)
+        dropdown.Position = UDim2.new(0,  0, 0, section.YOffset)
         
         local dropdownBg = Instance.new("Frame")
         dropdownBg.BackgroundColor3 = Config.Theme.Primary
@@ -412,7 +420,11 @@ function Library:NewSection(name)
             dropdownList.Visible = not dropdownList.Visible
         end
     
-        dropdown.MouseButton1Click:Connect(toggleList)
+        dropdown.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                toggleList()
+            end
+        end)
     
         -- Add Options
         local options = props.Options or {}
@@ -421,10 +433,12 @@ function Library:NewSection(name)
         for _, option in ipairs(options) do
             local btn = CreateButton(dropdownList, {Size = UDim2.new(1, 0, 0, 25), Text = option})
             btn.Position = UDim2.new(0, 0, 0, #optionButtons * 25)
-            btn.MouseButton1Click:Connect(function()
-                dropdownValue.Text = option
-                if props.Callback then props.Callback(option) end
-                toggleList()
+            btn.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dropdownValue.Text = option
+                    if props.Callback then props.Callback(option) end
+                    toggleList()
+                end
             end)
             table.insert(optionButtons, btn)
         end
@@ -487,11 +501,13 @@ function Library:NewSection(name)
             keybindValue.Text = "None"
         end
     
-        keybind.MouseButton1Click:Connect(function()
-            if isBinding then
-                unbindKey()
-            else
-                bindKey()            
+        keybind.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                if isBinding then
+                    unbindKey()
+                else
+                    bindKey()            
+                end
             end
         end)
     
@@ -507,4 +523,5 @@ function Library:NewSection(name)
         return keybind
     end
 end
+
 return Library
