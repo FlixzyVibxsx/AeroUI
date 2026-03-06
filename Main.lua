@@ -187,7 +187,7 @@ function Library.new()
     closeBg.Size = UDim2.new(1, 0, 1, 0)
     closeBg.Name = "Background"
     closeBg.Parent = closeBtn
-    closeBtn.MouseButton1Click:Connect(function()
+    closeBtn.MouseButton1Down:Connect(function()
         self:Destroy()
     end)
     
