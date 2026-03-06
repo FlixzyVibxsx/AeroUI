@@ -390,121 +390,121 @@ function Library:NewSection(name)
         dropdownBg.Parent = dropdown
         
         local dropdownLabel = CreateLabel(dropdown, {Text = props.Text or "Dropdown", TextColor = Config.Theme.Text, TextSize = 14})
-    dropdownLabel.Position = UDim2.new(0, 10, 0, 0)
+        dropdownLabel.Position = UDim2.new(0, 10, 0, 0)
     
-    local dropdownValue = CreateLabel(dropdown, {Text = props.Default or "Select", TextColor = Config.Theme.TextDim, TextSize = 14})
-    dropdownValue.Position = UDim2.new(1, -10, 0, 0)
-    dropdownValue.TextXAlignment = "Right"
+        local dropdownValue = CreateLabel(dropdown, {Text = props.Default or "Select", TextColor = Config.Theme.TextDim, TextSize = 14})
+        dropdownValue.Position = UDim2.new(1, -10, 0, 0)
+        dropdownValue.TextXAlignment = "Right"
     
-    local dropdownList = CreateFrame(dropdown, {Size = UDim2.new(1, 0, 0, 0), Position = UDim2.new(0, 0, 0, 30)})
-    dropdownList.Name = "List"
-    dropdownList.Visible = false
-    dropdownList.BackgroundTransparency = 1
+        local dropdownList = CreateFrame(dropdown, {Size = UDim2.new(1, 0, 0, 0), Position = UDim2.new(0, 0, 0, 30)})
+        dropdownList.Name = "List"
+        dropdownList.Visible = false
+        dropdownList.BackgroundTransparency = 1
     
-    local listBg = Instance.new("Frame")
-    listBg.BackgroundColor3 = Config.Theme.Primary
-    listBg.BorderSizePixel = 0
-    listBg.Size = UDim2.new(1, 0, 1, 0)
-    listBg.Name = "Background"
-    listBg.Parent = dropdownList
+        local listBg = Instance.new("Frame")
+        listBg.BackgroundColor3 = Config.Theme.Primary
+        listBg.BorderSizePixel = 0
+        listBg.Size = UDim2.new(1, 0, 1, 0)
+        listBg.Name = "Background"
+        listBg.Parent = dropdownList
     
-    local function toggleList()
-        dropdownList.Visible = not dropdownList.Visible
+        local function toggleList()
+            dropdownList.Visible = not dropdownList.Visible
+        end
+    
+        dropdown.MouseButton1Click:Connect(toggleList)
+    
+        -- Add Options
+        local options = props.Options or {}
+        local optionButtons = {}
+    
+        for _, option in ipairs(options) do
+            local btn = CreateButton(dropdownList, {Size = UDim2.new(1, 0, 0, 25), Text = option})
+            btn.Position = UDim2.new(0, 0, 0, #optionButtons * 25)
+            btn.MouseButton1Click:Connect(function()
+                dropdownValue.Text = option
+                if props.Callback then props.Callback(option) end
+                toggleList()
+            end)
+            table.insert(optionButtons, btn)
+        end
+    
+        -- Auto-resize list
+        dropdownList.Size = UDim2.new(1, 0, 0, math.max(0, #optionButtons * 25))
+    
+        section.YOffset = section.YOffset + 30
+        return dropdown
     end
+
+    function section.NewTextBox(props)
+        local textbox = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 30)})
+        textbox.Name = "TextBox"
+        textbox.Position = UDim2.new(0, 0, 0, section.YOffset)
     
-    dropdown.MouseButton1Click:Connect(toggleList)
+        local label = CreateLabel(textbox, {Text = props.Text or "TextBox", TextColor = Config.Theme.Text, TextSize = 14})
+        label.Position = UDim2.new(0, 0, 0, 0)
     
-    -- Add Options
-    local options = props.Options or {}
-    local optionButtons = {}
+        local input = Instance.new("TextBox")
+        input.BackgroundTransparency = 1
+        input.Text = props.Default or ""
+        input.TextColor3 = Config.Theme.Text
+        input.TextSize = 14
+        input.Size = UDim2.new(1, -10, 1, 0)
+        input.Position = UDim2.new(0, 5, 0, 0)
+        input.PlaceholderText = "Enter text..."
+        input.PlaceholderColor3 = Config.Theme.TextDim
+        input.ClearTextOnFocus = false
+        input.Parent = textbox
     
-    for _, option in ipairs(options) do
-        local btn = CreateButton(dropdownList, {Size = UDim2.new(1, 0, 0, 25), Text = option})
-        btn.Position = UDim2.new(0, 0, 0, #optionButtons * 25)
-        btn.MouseButton1Click:Connect(function()
-            dropdownValue.Text = option
-            if props.Callback then props.Callback(option) end
-            toggleList()
+        input.FocusLost:Connect(function(enterPressed)
+            if props.Callback then props.Callback(input.Text, enterPressed) end
         end)
-        table.insert(optionButtons, btn)
+    
+        section.YOffset = section.YOffset + 30
+        return textbox
     end
-    
-    -- Auto-resize list
-    dropdownList.Size = UDim2.new(1, 0, 0, math.max(0, #optionButtons * 25))
-    
-    section.YOffset = section.YOffset + 30
-    return dropdown
-end
 
-function section.NewTextBox(props)
-    local textbox = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 30)})
-    textbox.Name = "TextBox"
-    textbox.Position = UDim2.new(0, 0, 0, section.YOffset)
+    function section.NewKeybind(props)
+        local keybind = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 30)})
+        keybind.Name = "Keybind"
+        keybind.Position = UDim2.new(0, 0, 0, section.YOffset)
     
-    local label = CreateLabel(textbox, {Text = props.Text or "TextBox", TextColor = Config.Theme.Text, TextSize = 14})
-    label.Position = UDim2.new(0, 0, 0, 0)
+        local label = CreateLabel(keybind, {Text = props.Text or "Keybind", TextColor = Config.Theme.Text, TextSize = 14})
+        label.Position = UDim2.new(0, 0, 0, 0)
     
-    local input = Instance.new("TextBox")
-    input.BackgroundTransparency = 1
-    input.Text = props.Default or ""
-    input.TextColor3 = Config.Theme.Text
-    input.TextSize = 14
-    input.Size = UDim2.new(1, -10, 1, 0)
-    input.Position = UDim2.new(0, 5, 0, 0)
-    input.PlaceholderText = "Enter text..."
-    input.PlaceholderColor3 = Config.Theme.TextDim
-    input.ClearTextOnFocus = false
-    input.Parent = textbox
-    
-    input.FocusLost:Connect(function(enterPressed)
-        if props.Callback then props.Callback(input.Text, enterPressed) end
-    end)
-    
-    section.YOffset = section.YOffset + 30
-    return textbox
-end
-
-function section.NewKeybind(props)
-    local keybind = CreateFrame(sectionFrame, {Size = UDim2.new(1, 0, 0, 30)})
-    keybind.Name = "Keybind"
-    keybind.Position = UDim2.new(0, 0, 0, section.YOffset)
-    
-    local label = CreateLabel(keybind, {Text = props.Text or "Keybind", TextColor = Config.Theme.Text, TextSize = 14})
-    label.Position = UDim2.new(0, 0, 0, 0)
-    
-    local keybindValue = CreateLabel(keybind, {Text = props.Default or "None", TextColor = Config.Theme.TextDim, TextSize = 14})
-    keybindValue.Position = UDim2.new(1, -10, 0, 0)
-    keybindValue.TextXAlignment = "Right"
-    
-    local isBinding = false
-    local function bindKey()
-        isBinding = true
-        keybindValue.Text = "..."
-    end
-    
-    local function unbindKey()
-        isBinding = false
-        keybindValue.Text = "None"
-    end
-    
-    keybind.MouseButton1Click:Connect(function()
-        if isBinding then
-            unbindKey()
-        else
-            bindKey()
+        local keybindValue = CreateLabel(keybind, {Text = props.Default or "None", TextColor = Config.Theme.TextDim, TextSize = 14})
+        keybindValue.Position = UDim2.new(1, -10, 0, 0)
+        keybindValue.TextXAlignment = "Right"
+        
+        local isBinding = false
+        local function bindKey()
+            isBinding = true
+            keybindValue.Text = "..."
         end
-    end)
     
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if isBinding and not gameProcessed then
+        local function unbindKey()
             isBinding = false
-            keybindValue.Text = input.KeyCode.Name
-            if props.Callback then props.Callback(input.KeyCode) end
+            keybindValue.Text = "None"
         end
-    end)
     
-    section.YOffset = section.YOffset + 30
-    return keybind
+        keybind.MouseButton1Click:Connect(function()
+            if isBinding then
+                unbindKey()
+            else
+                bindKey()            
+            end
+        end)
+    
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if isBinding and not gameProcessed then
+                isBinding = false
+                keybindValue.Text = input.KeyCode.Name
+                if props.Callback then props.Callback(input.KeyCode) end
+            end
+        end)
+    
+        section.YOffset = section.YOffset + 30
+        return keybind
+    end
 end
-
 return Library
