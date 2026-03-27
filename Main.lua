@@ -191,17 +191,23 @@ function Library.new()
     g3.Parent                 = glowRing
     Corner(g3, 30)
 
-    -- Window (created AFTER glowRing so it renders on top in Sibling mode)
     self.Window = Instance.new("Frame")
-    self.Window.BackgroundColor3 = Config.Theme.Secondary
+    self.Window.BackgroundTransparency = 1
     self.Window.BorderSizePixel  = 0
     self.Window.Size             = Config.Size
     self.Window.Position         = UDim2.new(0.5, -190, 0.5, -240)
     self.Window.Name             = "Window"
     self.Window.Parent           = self.ScreenGui
     Corner(self.Window, 12)
-    self.Window.ClipsDescendants = true
     Stroke(self.Window, Config.Theme.Accent, 1.5)
+
+    -- Rounded background that clips to window shape
+    local winBg = Instance.new("Frame")
+    winBg.BackgroundColor3 = Config.Theme.Secondary
+    winBg.BorderSizePixel  = 0
+    winBg.Size             = UDim2.new(1, 0, 1, 0)
+    winBg.Parent           = self.Window
+    Corner(winBg, 12)
 
     -- Title bar
     local titleBar = Instance.new("Frame")
@@ -553,32 +559,43 @@ function Library:NewSection(name)
         fill.Parent           = track
         Corner(fill, 3)
 
-        -- Handle is a child of track, not fill, so it doesn't get clipped
+        -- Handle is a child of row so it's never clipped by the 6px track
         local handle = Instance.new("Frame")
         handle.BackgroundColor3 = Config.Theme.Text
         handle.BorderSizePixel  = 0
-        handle.Size             = UDim2.new(0, 12, 0, 12)
-        handle.Position         = UDim2.new(0, -6, 0.5, -6)
-        handle.Parent           = track
-        Corner(handle, 6)
+        handle.Size             = UDim2.new(0, 14, 0, 14)
+        handle.AnchorPoint      = Vector2.new(0.5, 0.5)
+        handle.Position         = UDim2.new(0, 12, 0, 33) -- default: left edge of track, vertically centered
+        handle.Parent           = row
+        Corner(handle, 7)
         Stroke(handle, Config.Theme.Accent, 1)
 
+        local trackLeft   = 12  -- matches track.Position X offset
+        local trackWidth  = 0   -- resolved after first render via AbsoluteSize
+
         local dragging = false
-        local function update(inputX)
-            local relX  = math.clamp((inputX - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+        local function update(screenX)
+            -- Use AbsolutePosition/Size once rendered
+            local tLeft  = track.AbsolutePosition.X
+            local tWidth = track.AbsoluteSize.X
+            if tWidth == 0 then return end
+            local relX  = math.clamp((screenX - tLeft) / tWidth, 0, 1)
             local value = math.floor(minVal + relX * (maxVal - minVal))
-            fill.Size          = UDim2.new(relX, 0, 1, 0)
-            -- position handle at the right edge of fill along the track
-            handle.Position    = UDim2.new(relX, -6, 0.5, -6)
-            valLbl.Text        = tostring(value)
+            fill.Size       = UDim2.new(relX, 0, 1, 0)
+            -- move handle: X = track left offset + relX * track pixel width
+            handle.Position = UDim2.new(0, trackLeft + relX * tWidth, 0, 33)
+            valLbl.Text     = tostring(value)
             if props.Callback then props.Callback(value) end
         end
 
-        -- Set initial fill and handle from props.Value
+        -- Set initial position after a frame so AbsoluteSize is valid
         local initVal = math.clamp(props.Value or minVal, minVal, maxVal)
         local initRel = (maxVal > minVal) and ((initVal - minVal) / (maxVal - minVal)) or 0
-        fill.Size       = UDim2.new(initRel, 0, 1, 0)
-        handle.Position = UDim2.new(initRel, -6, 0.5, -6)
+        fill.Size = UDim2.new(initRel, 0, 1, 0)
+        task.defer(function()
+            local tWidth = track.AbsoluteSize.X
+            handle.Position = UDim2.new(0, trackLeft + initRel * tWidth, 0, 33)
+        end)
 
         -- Invisible hit area covering the track zone
         local hitArea = Instance.new("TextButton")
