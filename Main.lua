@@ -151,18 +151,31 @@ function Library.new()
     self.Window.Name             = "Window"
     self.Window.Parent           = self.ScreenGui
     Corner(self.Window, 12)
-    Stroke(self.Window, Config.Theme.Edge, 1)
 
-    -- Drop shadow illusion via a slightly larger darker frame behind
-    local shadow = Instance.new("Frame")
-    shadow.BackgroundColor3     = Color3.fromRGB(0, 0, 0)
-    shadow.BackgroundTransparency = 0.6
-    shadow.BorderSizePixel      = 0
-    shadow.Size                 = UDim2.new(1, 20, 1, 20)
-    shadow.Position             = UDim2.new(0, -10, 0, 6)
-    shadow.ZIndex               = 0
-    shadow.Parent               = self.Window
-    Corner(shadow, 16)
+    -- Neon edge glow: stacked frames, each larger and more transparent
+    -- giving a soft bloom effect around the window border
+    local glowColor = Config.Theme.Accent
+    local glowLayers = {
+        { pad = 3,  alpha = 0.55, radius = 14 },
+        { pad = 7,  alpha = 0.72, radius = 17 },
+        { pad = 13, alpha = 0.82, radius = 21 },
+        { pad = 20, alpha = 0.90, radius = 26 },
+        { pad = 30, alpha = 0.95, radius = 32 },
+    }
+    for _, g in ipairs(glowLayers) do
+        local glow = Instance.new("Frame")
+        glow.BackgroundColor3     = glowColor
+        glow.BackgroundTransparency = g.alpha
+        glow.BorderSizePixel      = 0
+        glow.Size                 = UDim2.new(1, g.pad * 2, 1, g.pad * 2)
+        glow.Position             = UDim2.new(0, -g.pad, 0, -g.pad)
+        glow.ZIndex               = 0
+        glow.Parent               = self.Window
+        Corner(glow, g.radius)
+    end
+
+    -- Crisp inner border on top of glow
+    Stroke(self.Window, Config.Theme.Accent, 1)
 
     -- Title bar
     local titleBar = Instance.new("Frame")
@@ -418,29 +431,30 @@ function Library:NewSection(name)
 
     -- ── Toggle ───────────────────────────────────────────────────────────────
     function section.NewToggle(props)
-        local row   = makeRow(32)
+        local row   = makeRow(34)
         local state = false
         local s     = rowStroke(row)
 
-        Label(row, { Text = props.Text or "Toggle", Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 12, 0, 0) })
+        Label(row, { Text = props.Text or "Toggle", Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 12, 0, 0), FrameSize = UDim2.new(1, -80, 1, 0) })
 
         -- Track
         local track = Instance.new("Frame")
         track.BackgroundColor3 = Config.Theme.Secondary
         track.BorderSizePixel  = 0
-        track.Size             = UDim2.new(0, 34, 0, 18)
-        track.Position         = UDim2.new(1, -46, 0.5, -9)
+        track.Size             = UDim2.new(0, 36, 0, 20)
+        track.Position         = UDim2.new(1, -48, 0.5, -10)
+        track.ClipsDescendants = true
         track.Parent           = row
-        Corner(track, 9)
+        Corner(track, 10)
         Stroke(track, Config.Theme.Edge, 1)
 
         local knob = Instance.new("Frame")
         knob.BackgroundColor3 = Config.Theme.TextDim
         knob.BorderSizePixel  = 0
-        knob.Size             = UDim2.new(0, 12, 0, 12)
-        knob.Position         = UDim2.new(0, 3, 0.5, -6)
+        knob.Size             = UDim2.new(0, 14, 0, 14)
+        knob.Position         = UDim2.new(0, 3, 0.5, -7)
         knob.Parent           = track
-        Corner(knob, 6)
+        Corner(knob, 7)
 
         local btn = Instance.new("TextButton")
         btn.BackgroundTransparency = 1
@@ -458,10 +472,10 @@ function Library:NewSection(name)
             state = not state
             if state then
                 Tween(track, TI_MED, { BackgroundColor3 = Config.Theme.Accent })
-                Tween(knob,  TI_MED, { Position = UDim2.new(0, 19, 0.5, -6), BackgroundColor3 = Config.Theme.Text })
+                Tween(knob,  TI_MED, { Position = UDim2.new(0, 19, 0.5, -7), BackgroundColor3 = Config.Theme.Text })
             else
                 Tween(track, TI_MED, { BackgroundColor3 = Config.Theme.Secondary })
-                Tween(knob,  TI_MED, { Position = UDim2.new(0, 3, 0.5, -6), BackgroundColor3 = Config.Theme.TextDim })
+                Tween(knob,  TI_MED, { Position = UDim2.new(0, 3, 0.5, -7), BackgroundColor3 = Config.Theme.TextDim })
             end
             if props.Callback then props.Callback(state) end
         end)
@@ -511,6 +525,11 @@ function Library:NewSection(name)
             if props.Callback then props.Callback(value) end
         end
 
+        -- Set initial fill from props.Value
+        local initVal = math.clamp(props.Value or minVal, minVal, maxVal)
+        local initRel = (maxVal > minVal) and ((initVal - minVal) / (maxVal - minVal)) or 0
+        fill.Size = UDim2.new(initRel, 0, 1, 0)
+
         track.InputBegan:Connect(function(i)
             if i.UserInputType == Enum.UserInputType.MouseButton1 then
                 dragging = true
@@ -551,7 +570,7 @@ function Library:NewSection(name)
         -- Header
         Label(dd, { Text = props.Text or "Dropdown", Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 12, 0, 0), FrameSize = UDim2.new(0.65, 0, 0, 32) })
         local valLbl = Label(dd, { Text = props.Default or "Select", Color = Config.Theme.TextDim, Size = 12, AlignX = Enum.TextXAlignment.Right, Pos = UDim2.new(0, 0, 0, 0), FrameSize = UDim2.new(1, -32, 0, 32) })
-        local arrow  = Label(dd, { Text = "⌄", Color = Config.Theme.TextDim, Size = 14, AlignX = Enum.TextXAlignment.Center, Pos = UDim2.new(1, -26, 0, 0), FrameSize = UDim2.new(0, 22, 0, 32) })
+        local arrow  = Label(dd, { Text = "v", Color = Config.Theme.TextDim, Size = 11, AlignX = Enum.TextXAlignment.Center, Pos = UDim2.new(1, -26, 0, 0), FrameSize = UDim2.new(0, 22, 0, 32) })
 
         -- Separator line
         local sep = Instance.new("Frame")
