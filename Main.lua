@@ -73,6 +73,7 @@ local function CreateButton(parent, props)
     bg.BackgroundTransparency = 1
     bg.Size   = UDim2.new(1, 0, 1, 0)
     bg.Name   = "Background"
+    bg.Active = false
     bg.Parent = button
 
     local text = CreateLabel(button, { Text = props.Text, TextColor = Config.Theme.Text, TextSize = 14 })
@@ -161,6 +162,8 @@ function Library.new()
     winBg.BorderSizePixel  = 0
     winBg.Size   = UDim2.new(1, 0, 1, 0)
     winBg.Name   = "Background"
+    winBg.Active = false  -- don't consume input
+    winBg.ZIndex = 0
     winBg.Parent = self.Window
 
     -- Title Bar
@@ -173,6 +176,8 @@ function Library.new()
     titleBg.BorderSizePixel  = 0
     titleBg.Size   = UDim2.new(1, 0, 0, 35)
     titleBg.Name   = "Background"
+    titleBg.Active = false
+    titleBg.ZIndex = 0
     titleBg.Parent = titleBar
 
     local titleLabel = CreateLabel(titleBar, { Text = Config.Title, TextColor = Config.Theme.Text, TextSize = 14 })
@@ -186,6 +191,7 @@ function Library.new()
     closeBg.BorderSizePixel  = 0
     closeBg.Size   = UDim2.new(1, 0, 1, 0)
     closeBg.Name   = "Background"
+    closeBg.Active = false
     closeBg.Parent = closeBtn
     closeBtn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -334,6 +340,7 @@ function Library:NewSection(name)
         toggleBg.BorderSizePixel  = 0
         toggleBg.Size   = UDim2.new(1, 0, 1, 0)
         toggleBg.Name   = "Background"
+        toggleBg.Active = false
         toggleBg.Parent = toggle
 
         local circle = Instance.new("Frame")
@@ -435,6 +442,7 @@ function Library:NewSection(name)
         dropBg.BorderSizePixel  = 0
         dropBg.Size   = UDim2.new(1, 0, 1, 0)
         dropBg.Name   = "Background"
+        dropBg.Active = false
         dropBg.Parent = dropdown
 
         local dropLabel = CreateLabel(dropdown, { Text = props.Text or "Dropdown", TextColor = Config.Theme.Text, TextSize = 14 })
@@ -453,6 +461,7 @@ function Library:NewSection(name)
         listBg.BorderSizePixel  = 0
         listBg.Size   = UDim2.new(1, 0, 1, 0)
         listBg.Name   = "Background"
+        listBg.Active = false
         listBg.Parent = dropList
 
         dropdown.InputBegan:Connect(function(input)
