@@ -142,33 +142,54 @@ function Library.new()
     self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent         = PARENT
 
-    -- Neon glow container parented to ScreenGui, positioned behind the window
-    local glowContainer = Instance.new("Frame")
-    glowContainer.BackgroundTransparency = 1
-    glowContainer.Size     = Config.Size
-    glowContainer.Position = UDim2.new(0.5, -190, 0.5, -240)
-    glowContainer.ZIndex   = 0
-    glowContainer.Name     = "GlowContainer"
-    glowContainer.Parent   = self.ScreenGui
+    -- Neon glow: use a thick UIStroke with a second outer stroke frame
+    -- This avoids any child frame bleeding over content
+    Stroke(self.Window, Config.Theme.Accent, 1.5)
 
-    local glowColor = Config.Theme.Accent
-    local glowLayers = {
-        { pad = 3,  alpha = 0.55, radius = 14 },
-        { pad = 7,  alpha = 0.72, radius = 17 },
-        { pad = 13, alpha = 0.82, radius = 21 },
-        { pad = 20, alpha = 0.90, radius = 26 },
-        { pad = 30, alpha = 0.95, radius = 32 },
-    }
-    for _, g in ipairs(glowLayers) do
-        local glow = Instance.new("Frame")
-        glow.BackgroundColor3       = glowColor
-        glow.BackgroundTransparency = g.alpha
-        glow.BorderSizePixel        = 0
-        glow.Size                   = UDim2.new(1, g.pad * 2, 1, g.pad * 2)
-        glow.Position               = UDim2.new(0, -g.pad, 0, -g.pad)
-        glow.Parent                 = glowContainer
-        Corner(glow, g.radius)
-    end
+    -- Outer glow ring (separate frame, same size, behind window)
+    -- We use ZIndexBehavior.Sibling so lower ZIndex = behind
+    local glowRing = Instance.new("Frame")
+    glowRing.BackgroundTransparency = 1
+    glowRing.BorderSizePixel        = 0
+    glowRing.Size                   = Config.Size
+    glowRing.Position               = UDim2.new(0.5, -190, 0.5, -240)
+    glowRing.ZIndex                 = 0
+    glowRing.Name                   = "GlowRing"
+    glowRing.Parent                 = self.ScreenGui
+    Corner(glowRing, 14)
+
+    -- Layer 1 — tight glow
+    local g1 = Instance.new("Frame")
+    g1.BackgroundColor3       = Config.Theme.Accent
+    g1.BackgroundTransparency = 0.6
+    g1.BorderSizePixel        = 0
+    g1.Size                   = UDim2.new(1, 8, 1, 8)
+    g1.Position               = UDim2.new(0, -4, 0, -4)
+    g1.ZIndex                 = 0
+    g1.Parent                 = glowRing
+    Corner(g1, 16)
+
+    -- Layer 2 — medium glow
+    local g2 = Instance.new("Frame")
+    g2.BackgroundColor3       = Config.Theme.Accent
+    g2.BackgroundTransparency = 0.78
+    g2.BorderSizePixel        = 0
+    g2.Size                   = UDim2.new(1, 20, 1, 20)
+    g2.Position               = UDim2.new(0, -10, 0, -10)
+    g2.ZIndex                 = 0
+    g2.Parent                 = glowRing
+    Corner(g2, 22)
+
+    -- Layer 3 — wide soft glow
+    local g3 = Instance.new("Frame")
+    g3.BackgroundColor3       = Config.Theme.Accent
+    g3.BackgroundTransparency = 0.90
+    g3.BorderSizePixel        = 0
+    g3.Size                   = UDim2.new(1, 40, 1, 40)
+    g3.Position               = UDim2.new(0, -20, 0, -20)
+    g3.ZIndex                 = 0
+    g3.Parent                 = glowRing
+    Corner(g3, 30)
 
     -- Window
     self.Window = Instance.new("Frame")
@@ -179,7 +200,6 @@ function Library.new()
     self.Window.Name             = "Window"
     self.Window.Parent           = self.ScreenGui
     Corner(self.Window, 12)
-    Stroke(self.Window, Config.Theme.Accent, 1)
 
     -- Title bar
     local titleBar = Instance.new("Frame")
@@ -243,8 +263,8 @@ function Library.new()
         if input == dragInput and dragging then
             local d = input.Position - mousePos
             local newPos = UDim2.new(framePos.X.Scale, framePos.X.Offset + d.X, framePos.Y.Scale, framePos.Y.Offset + d.Y)
-            self.Window.Position    = newPos
-            glowContainer.Position  = newPos
+            self.Window.Position = newPos
+            glowRing.Position    = newPos
         end
     end)
 
@@ -524,11 +544,11 @@ function Library:NewSection(name)
         Stroke(handle, Config.Theme.Accent, 1)
 
         local dragging = false
-        local function update(input)
-            local relX  = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+        local function update(inputX)
+            local relX  = math.clamp((inputX - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
             local value = math.floor(minVal + relX * (maxVal - minVal))
-            fill.Size     = UDim2.new(relX, 0, 1, 0)
-            valLbl.Text   = tostring(value)
+            fill.Size    = UDim2.new(relX, 0, 1, 0)
+            valLbl.Text  = tostring(value)
             if props.Callback then props.Callback(value) end
         end
 
@@ -537,21 +557,26 @@ function Library:NewSection(name)
         local initRel = (maxVal > minVal) and ((initVal - minVal) / (maxVal - minVal)) or 0
         fill.Size = UDim2.new(initRel, 0, 1, 0)
 
-        track.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-                Tween(handle, TI_FAST, { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, -7, 0.5, -7) })
-                update(i)
-            end
+        -- Invisible hit area covering the bottom half of the row where the track is
+        local hitArea = Instance.new("TextButton")
+        hitArea.BackgroundTransparency = 1
+        hitArea.Size     = UDim2.new(1, -24, 0, 20)
+        hitArea.Position = UDim2.new(0, 12, 0, 22)
+        hitArea.Text     = ""
+        hitArea.ZIndex   = 10
+        hitArea.Parent   = row
+
+        hitArea.MouseButton1Down:Connect(function(x, _y)
+            dragging = true
+            Tween(handle, TI_FAST, { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, -7, 0.5, -6) })
+            update(x)
         end)
-        track.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-                Tween(handle, TI_FAST, { Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0, -6, 0.5, -6) })
-            end
+        hitArea.MouseButton1Up:Connect(function()
+            dragging = false
+            Tween(handle, TI_FAST, { Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0, -6, 0.5, -6) })
         end)
-        UserInputService.InputChanged:Connect(function(i)
-            if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then update(i) end
+        hitArea.MouseMoved:Connect(function(x, _y)
+            if dragging then update(x) end
         end)
         return row
     end
@@ -752,7 +777,7 @@ function Library:NewSection(name)
         return row
     end
 
-    return section 
+    return section
 end
 
 return Library
