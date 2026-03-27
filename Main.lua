@@ -200,6 +200,7 @@ function Library.new()
     self.Window.Name             = "Window"
     self.Window.Parent           = self.ScreenGui
     Corner(self.Window, 12)
+    self.Window.ClipsDescendants = true
     Stroke(self.Window, Config.Theme.Accent, 1.5)
 
     -- Title bar
@@ -552,12 +553,13 @@ function Library:NewSection(name)
         fill.Parent           = track
         Corner(fill, 3)
 
+        -- Handle is a child of track, not fill, so it doesn't get clipped
         local handle = Instance.new("Frame")
         handle.BackgroundColor3 = Config.Theme.Text
         handle.BorderSizePixel  = 0
         handle.Size             = UDim2.new(0, 12, 0, 12)
         handle.Position         = UDim2.new(0, -6, 0.5, -6)
-        handle.Parent           = fill
+        handle.Parent           = track
         Corner(handle, 6)
         Stroke(handle, Config.Theme.Accent, 1)
 
@@ -565,15 +567,18 @@ function Library:NewSection(name)
         local function update(inputX)
             local relX  = math.clamp((inputX - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
             local value = math.floor(minVal + relX * (maxVal - minVal))
-            fill.Size    = UDim2.new(relX, 0, 1, 0)
-            valLbl.Text  = tostring(value)
+            fill.Size          = UDim2.new(relX, 0, 1, 0)
+            -- position handle at the right edge of fill along the track
+            handle.Position    = UDim2.new(relX, -6, 0.5, -6)
+            valLbl.Text        = tostring(value)
             if props.Callback then props.Callback(value) end
         end
 
-        -- Set initial fill from props.Value
+        -- Set initial fill and handle from props.Value
         local initVal = math.clamp(props.Value or minVal, minVal, maxVal)
         local initRel = (maxVal > minVal) and ((initVal - minVal) / (maxVal - minVal)) or 0
-        fill.Size = UDim2.new(initRel, 0, 1, 0)
+        fill.Size       = UDim2.new(initRel, 0, 1, 0)
+        handle.Position = UDim2.new(initRel, -6, 0.5, -6)
 
         -- Invisible hit area covering the track zone
         local hitArea = Instance.new("TextButton")
@@ -586,15 +591,12 @@ function Library:NewSection(name)
 
         hitArea.MouseButton1Down:Connect(function()
             dragging = true
-            Tween(handle, TI_FAST, { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, -7, 0.5, -6) })
-            -- use current mouse position from UIS
             update(UserInputService:GetMouseLocation().X)
         end)
 
         UserInputService.InputEnded:Connect(function(i)
             if i.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
                 dragging = false
-                Tween(handle, TI_FAST, { Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0, -6, 0.5, -6) })
             end
         end)
 
