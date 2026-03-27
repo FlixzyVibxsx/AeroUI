@@ -277,6 +277,23 @@ function Library.new()
     self.TabBar.Position         = UDim2.new(0, 0, 0, 38)
     self.TabBar.Name             = "TabBar"
     self.TabBar.Parent           = self.Window
+    Corner(self.TabBar, 12)
+
+    -- Square off top corners of TabBar (title bar covers them anyway)
+    local tabBarTopFill = Instance.new("Frame")
+    tabBarTopFill.BackgroundColor3 = Config.Theme.Primary
+    tabBarTopFill.BorderSizePixel  = 0
+    tabBarTopFill.Size             = UDim2.new(1, 0, 0, 12)
+    tabBarTopFill.Position         = UDim2.new(0, 0, 0, 0)
+    tabBarTopFill.Parent           = self.TabBar
+
+    -- Square off top-right corner only (right side is flush with divider)
+    local tabBarRightFill = Instance.new("Frame")
+    tabBarRightFill.BackgroundColor3 = Config.Theme.Primary
+    tabBarRightFill.BorderSizePixel  = 0
+    tabBarRightFill.Size             = UDim2.new(0, 12, 1, 0)
+    tabBarRightFill.Position         = UDim2.new(1, -12, 0, 0)
+    tabBarRightFill.Parent           = self.TabBar
 
     -- Divider line between sidebar and content
     local divider = Instance.new("Frame")
@@ -567,18 +584,17 @@ function Library:NewSection(name)
         hitArea.ZIndex   = 10
         hitArea.Parent   = row
 
-        hitArea.MouseButton1Down:Connect(function(x)
+        hitArea.MouseButton1Down:Connect(function()
             dragging = true
             Tween(handle, TI_FAST, { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, -7, 0.5, -6) })
-            update(x)
+            -- use current mouse position from UIS
+            update(UserInputService:GetMouseLocation().X)
         end)
 
         UserInputService.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                if dragging then
-                    dragging = false
-                    Tween(handle, TI_FAST, { Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0, -6, 0.5, -6) })
-                end
+            if i.UserInputType == Enum.UserInputType.MouseButton1 and dragging then
+                dragging = false
+                Tween(handle, TI_FAST, { Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0, -6, 0.5, -6) })
             end
         end)
 
