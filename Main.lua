@@ -144,7 +144,7 @@ function Library.new()
 
     -- Neon glow: use a thick UIStroke with a second outer stroke frame
     -- This avoids any child frame bleeding over content
-    Stroke(self.Window, Config.Theme.Accent, 1.5)
+    -- (stroke applied after Window is created below)
 
     -- Outer glow ring (separate frame, same size, behind window)
     -- We use ZIndexBehavior.Sibling so lower ZIndex = behind
@@ -191,7 +191,7 @@ function Library.new()
     g3.Parent                 = glowRing
     Corner(g3, 30)
 
-    -- Window
+    -- Window (created AFTER glowRing so it renders on top in Sibling mode)
     self.Window = Instance.new("Frame")
     self.Window.BackgroundColor3 = Config.Theme.Secondary
     self.Window.BorderSizePixel  = 0
@@ -200,6 +200,7 @@ function Library.new()
     self.Window.Name             = "Window"
     self.Window.Parent           = self.ScreenGui
     Corner(self.Window, 12)
+    Stroke(self.Window, Config.Theme.Accent, 1.5)
 
     -- Title bar
     local titleBar = Instance.new("Frame")
@@ -557,7 +558,7 @@ function Library:NewSection(name)
         local initRel = (maxVal > minVal) and ((initVal - minVal) / (maxVal - minVal)) or 0
         fill.Size = UDim2.new(initRel, 0, 1, 0)
 
-        -- Invisible hit area covering the bottom half of the row where the track is
+        -- Invisible hit area covering the track zone
         local hitArea = Instance.new("TextButton")
         hitArea.BackgroundTransparency = 1
         hitArea.Size     = UDim2.new(1, -24, 0, 20)
@@ -566,17 +567,25 @@ function Library:NewSection(name)
         hitArea.ZIndex   = 10
         hitArea.Parent   = row
 
-        hitArea.MouseButton1Down:Connect(function(x, _y)
+        hitArea.MouseButton1Down:Connect(function(x)
             dragging = true
             Tween(handle, TI_FAST, { Size = UDim2.new(0, 14, 0, 14), Position = UDim2.new(0, -7, 0.5, -6) })
             update(x)
         end)
-        hitArea.MouseButton1Up:Connect(function()
-            dragging = false
-            Tween(handle, TI_FAST, { Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0, -6, 0.5, -6) })
+
+        UserInputService.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                if dragging then
+                    dragging = false
+                    Tween(handle, TI_FAST, { Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(0, -6, 0.5, -6) })
+                end
+            end
         end)
-        hitArea.MouseMoved:Connect(function(x, _y)
-            if dragging then update(x) end
+
+        UserInputService.InputChanged:Connect(function(i)
+            if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
+                update(i.Position.X)
+            end
         end)
         return row
     end
