@@ -752,7 +752,7 @@ function Library:NewSection(name)
         return row
     end
 
-    return section
+    return section 
 end
 
 return Library
