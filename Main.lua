@@ -433,57 +433,103 @@ function Library:NewSection(name)
     end
 
     function section.NewDropdown(props)
-        local dropdown = CreateFrame(sectionFrame, { Size = UDim2.new(1, 0, 0, 30) })
-        dropdown.Name     = "Dropdown"
+        local options    = props.Options or {}
+        local listHeight = #options * 25
+        local isOpen     = false
+
+        -- Container that resizes when open
+        local dropdown = Instance.new("Frame")
+        dropdown.BackgroundTransparency = 1
+        dropdown.Size     = UDim2.new(1, -10, 0, 30)
         dropdown.Position = UDim2.new(0, 5, 0, section.YOffset)
+        dropdown.Name     = "Dropdown"
+        dropdown.ClipsDescendants = true
+        dropdown.Parent   = sectionFrame
 
         local dropBg = Instance.new("Frame")
         dropBg.BackgroundColor3 = Config.Theme.Primary
         dropBg.BorderSizePixel  = 0
-        dropBg.Size   = UDim2.new(1, 0, 1, 0)
+        dropBg.Size   = UDim2.new(1, 0, 0, 30)
         dropBg.Name   = "Background"
         dropBg.Active = false
         dropBg.Parent = dropdown
 
         local dropLabel = CreateLabel(dropdown, { Text = props.Text or "Dropdown", TextColor = Config.Theme.Text, TextSize = 14 })
         dropLabel.Position = UDim2.new(0, 10, 0, 0)
+        dropLabel.Size     = UDim2.new(0.5, 0, 0, 30)
 
         local dropValue = CreateLabel(dropdown, { Text = props.Default or "Select", TextColor = Config.Theme.TextDim, TextSize = 14 })
-        dropValue.Position       = UDim2.new(1, -10, 0, 0)
+        dropValue.Position       = UDim2.new(0, 0, 0, 0)
+        dropValue.Size           = UDim2.new(1, -10, 0, 30)
         dropValue.TextXAlignment = Enum.TextXAlignment.Right
 
-        local dropList = CreateFrame(dropdown, { Size = UDim2.new(1, 0, 0, 0), Position = UDim2.new(0, 0, 0, 30) })
-        dropList.Name    = "List"
-        dropList.Visible = false
+        -- Arrow indicator
+        local arrow = CreateLabel(dropdown, { Text = "▼", TextColor = Config.Theme.TextDim, TextSize = 12 })
+        arrow.Position       = UDim2.new(1, -20, 0, 0)
+        arrow.Size           = UDim2.new(0, 15, 0, 30)
+        arrow.TextXAlignment = Enum.TextXAlignment.Right
+
+        -- List sits below the header row
+        local dropList = Instance.new("Frame")
+        dropList.BackgroundTransparency = 1
+        dropList.Size     = UDim2.new(1, 0, 0, listHeight)
+        dropList.Position = UDim2.new(0, 0, 0, 30)
+        dropList.Name     = "List"
+        dropList.Parent   = dropdown
 
         local listBg = Instance.new("Frame")
-        listBg.BackgroundColor3 = Config.Theme.Primary
+        listBg.BackgroundColor3 = Config.Theme.Secondary
         listBg.BorderSizePixel  = 0
         listBg.Size   = UDim2.new(1, 0, 1, 0)
-        listBg.Name   = "Background"
         listBg.Active = false
         listBg.Parent = dropList
 
-        dropdown.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dropList.Visible = not dropList.Visible
-            end
-        end)
-
-        local options = props.Options or {}
         for i, option in ipairs(options) do
-            local btn = CreateButton(dropList, { Size = UDim2.new(1, 0, 0, 25), Text = option })
-            btn.Position = UDim2.new(0, 0, 0, (i - 1) * 25)
-            btn.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    dropValue.Text   = option
-                    dropList.Visible = false
-                    if props.Callback then props.Callback(option) end
-                end
+            local btn = Instance.new("TextButton")
+            btn.BackgroundTransparency = 1
+            btn.Size          = UDim2.new(1, 0, 0, 25)
+            btn.Position      = UDim2.new(0, 0, 0, (i - 1) * 25)
+            btn.Text          = option
+            btn.TextColor3    = Config.Theme.TextDim
+            btn.TextSize      = 13
+            btn.Font          = Enum.Font.Gotham
+            btn.TextXAlignment = Enum.TextXAlignment.Left
+            btn.Parent        = dropList
+
+            -- Pad text
+            local pad = Instance.new("UIPadding")
+            pad.PaddingLeft = UDim.new(0, 8)
+            pad.Parent = btn
+
+            btn.MouseEnter:Connect(function()
+                btn.TextColor3 = Config.Theme.Text
+            end)
+            btn.MouseLeave:Connect(function()
+                btn.TextColor3 = Config.Theme.TextDim
+            end)
+            btn.MouseButton1Click:Connect(function()
+                dropValue.Text = option
+                -- close
+                isOpen = false
+                arrow.Text = "▼"
+                TweenService:Create(dropdown, TWEEN_FAST, { Size = UDim2.new(1, -10, 0, 30) }):Play()
+                if props.Callback then props.Callback(option) end
             end)
         end
 
-        dropList.Size   = UDim2.new(1, 0, 0, #options * 25)
+        -- Toggle open/close by clicking the header
+        local header = Instance.new("TextButton")
+        header.BackgroundTransparency = 1
+        header.Size   = UDim2.new(1, 0, 0, 30)
+        header.Text   = ""
+        header.Parent = dropdown
+        header.MouseButton1Click:Connect(function()
+            isOpen = not isOpen
+            arrow.Text = isOpen and "▲" or "▼"
+            local targetH = isOpen and (30 + listHeight) or 30
+            TweenService:Create(dropdown, TWEEN_FAST, { Size = UDim2.new(1, -10, 0, targetH) }):Play()
+        end)
+
         section.YOffset = section.YOffset + 35
         updateCanvas()
         return dropdown
