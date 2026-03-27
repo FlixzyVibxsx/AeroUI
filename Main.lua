@@ -142,18 +142,15 @@ function Library.new()
     self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent         = PARENT
 
-    -- Window
-    self.Window = Instance.new("Frame")
-    self.Window.BackgroundColor3 = Config.Theme.Secondary
-    self.Window.BorderSizePixel  = 0
-    self.Window.Size             = Config.Size
-    self.Window.Position         = UDim2.new(0.5, -190, 0.5, -240)
-    self.Window.Name             = "Window"
-    self.Window.Parent           = self.ScreenGui
-    Corner(self.Window, 12)
+    -- Neon glow container parented to ScreenGui, positioned behind the window
+    local glowContainer = Instance.new("Frame")
+    glowContainer.BackgroundTransparency = 1
+    glowContainer.Size     = Config.Size
+    glowContainer.Position = UDim2.new(0.5, -190, 0.5, -240)
+    glowContainer.ZIndex   = 0
+    glowContainer.Name     = "GlowContainer"
+    glowContainer.Parent   = self.ScreenGui
 
-    -- Neon edge glow: stacked frames, each larger and more transparent
-    -- giving a soft bloom effect around the window border
     local glowColor = Config.Theme.Accent
     local glowLayers = {
         { pad = 3,  alpha = 0.55, radius = 14 },
@@ -164,17 +161,24 @@ function Library.new()
     }
     for _, g in ipairs(glowLayers) do
         local glow = Instance.new("Frame")
-        glow.BackgroundColor3     = glowColor
+        glow.BackgroundColor3       = glowColor
         glow.BackgroundTransparency = g.alpha
-        glow.BorderSizePixel      = 0
-        glow.Size                 = UDim2.new(1, g.pad * 2, 1, g.pad * 2)
-        glow.Position             = UDim2.new(0, -g.pad, 0, -g.pad)
-        glow.ZIndex               = 0
-        glow.Parent               = self.Window
+        glow.BorderSizePixel        = 0
+        glow.Size                   = UDim2.new(1, g.pad * 2, 1, g.pad * 2)
+        glow.Position               = UDim2.new(0, -g.pad, 0, -g.pad)
+        glow.Parent                 = glowContainer
         Corner(glow, g.radius)
     end
 
-    -- Crisp inner border on top of glow
+    -- Window
+    self.Window = Instance.new("Frame")
+    self.Window.BackgroundColor3 = Config.Theme.Secondary
+    self.Window.BorderSizePixel  = 0
+    self.Window.Size             = Config.Size
+    self.Window.Position         = UDim2.new(0.5, -190, 0.5, -240)
+    self.Window.Name             = "Window"
+    self.Window.Parent           = self.ScreenGui
+    Corner(self.Window, 12)
     Stroke(self.Window, Config.Theme.Accent, 1)
 
     -- Title bar
@@ -238,7 +242,9 @@ function Library.new()
     UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local d = input.Position - mousePos
-            self.Window.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + d.X, framePos.Y.Scale, framePos.Y.Offset + d.Y)
+            local newPos = UDim2.new(framePos.X.Scale, framePos.X.Offset + d.X, framePos.Y.Scale, framePos.Y.Offset + d.Y)
+            self.Window.Position    = newPos
+            glowContainer.Position  = newPos
         end
     end)
 
@@ -495,6 +501,7 @@ function Library:NewSection(name)
         local track = Instance.new("Frame")
         track.BackgroundColor3 = Config.Theme.Secondary
         track.BorderSizePixel  = 0
+        track.Active           = true
         track.Size             = UDim2.new(1, -24, 0, 6)
         track.Position         = UDim2.new(0, 12, 0, 30)
         track.Parent           = row
