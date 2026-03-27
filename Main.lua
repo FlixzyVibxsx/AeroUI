@@ -222,11 +222,24 @@ function Library.new()
         end
     end)
 
-    -- Content Area
-    self.Content     = CreateFrame(self.Window, { Size = UDim2.new(1, 0, 1, -35), Position = UDim2.new(0, 0, 0, 35) })
-    self.Content.Name = "Content"
+        -- Tab sidebar (left column, 100px wide)
+    self.TabBar = Instance.new("Frame")
+    self.TabBar.BackgroundColor3 = Config.Theme.Primary
+    self.TabBar.BorderSizePixel  = 0
+    self.TabBar.Size             = UDim2.new(0, 100, 1, -35)
+    self.TabBar.Position         = UDim2.new(0, 0, 0, 35)
+    self.TabBar.Name             = "TabBar"
+    self.TabBar.Parent           = self.Window
 
-    self.Tabs        = {}
+    -- Content area (right of tab bar)
+    self.Content = Instance.new("Frame")
+    self.Content.BackgroundTransparency = 1
+    self.Content.Size     = UDim2.new(1, -100, 1, -35)
+    self.Content.Position = UDim2.new(0, 100, 0, 35)
+    self.Content.Name     = "Content"
+    self.Content.Parent   = self.Window
+
+    self.TabYOffset  = 0
     self.CurrentTab  = nil
 
     return self
@@ -240,40 +253,79 @@ end
 function Library:NewSection(name)
     local section = { YOffset = 0 }
 
-    local tabBtn = CreateButton(self.Content, { Size = UDim2.new(1, 0, 0, 30), Text = name })
-    tabBtn.Name = "TabButton"
+    -- Tab button in the sidebar
+    local tabBtn = Instance.new("TextButton")
+    tabBtn.BackgroundColor3     = Config.Theme.Primary
+    tabBtn.BackgroundTransparency = 0.4
+    tabBtn.BorderSizePixel      = 0
+    tabBtn.Size                 = UDim2.new(1, 0, 0, 30)
+    tabBtn.Position             = UDim2.new(0, 0, 0, self.TabYOffset)
+    tabBtn.Text                 = name
+    tabBtn.TextColor3           = Config.Theme.TextDim
+    tabBtn.TextSize             = 13
+    tabBtn.Font                 = Enum.Font.Gotham
+    tabBtn.Name                 = "TabButton"
+    tabBtn.Parent               = self.TabBar
+    self.TabYOffset             = self.TabYOffset + 30
 
-    local sectionFrame = CreateFrame(self.Content, { Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0, 0, 0, 35) })
-    sectionFrame.Name    = "Section"
-    sectionFrame.Visible = false
+    -- Section content frame
+    local sectionFrame = Instance.new("ScrollingFrame")
+    sectionFrame.BackgroundTransparency = 1
+    sectionFrame.Size             = UDim2.new(1, 0, 1, 0)
+    sectionFrame.Position         = UDim2.new(0, 0, 0, 0)
+    sectionFrame.ScrollBarThickness = 3
+    sectionFrame.ScrollBarImageColor3 = Config.Theme.Accent
+    sectionFrame.CanvasSize       = UDim2.new(0, 0, 0, 0)
+    sectionFrame.Name             = "Section"
+    sectionFrame.Visible          = false
+    sectionFrame.Parent           = self.Content
 
-    tabBtn.InputBegan:Connect(function(input)
-        if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-        -- Hide all tabs/sections in one pass
+    tabBtn.MouseButton1Click:Connect(function()
+        -- Deactivate all
+        for _, child in ipairs(self.TabBar:GetChildren()) do
+            if child:IsA("TextButton") then
+                child.BackgroundTransparency = 0.4
+                child.TextColor3 = Config.Theme.TextDim
+            end
+        end
         for _, child in ipairs(self.Content:GetChildren()) do
-            if child.Name == "TabButton" then
-                child.BackgroundTransparency = 1
-            elseif child.Name == "Section" then
+            if child.Name == "Section" then
                 child.Visible = false
             end
         end
-        tabBtn.BackgroundTransparency = 0.5
+        -- Activate this one
+        tabBtn.BackgroundTransparency = 0
+        tabBtn.TextColor3 = Config.Theme.Text
         sectionFrame.Visible = true
         self.CurrentTab = section
     end)
 
+    -- Auto-open first tab
+    if self.TabYOffset == 30 then
+        tabBtn.BackgroundTransparency = 0
+        tabBtn.TextColor3 = Config.Theme.Text
+        sectionFrame.Visible = true
+        self.CurrentTab = section
+    end
+
     -- Elements
+    local function updateCanvas()
+        sectionFrame.CanvasSize = UDim2.new(0, 0, 0, section.YOffset + 5)
+    end
+
     function section.NewButton(props)
         local btn = CreateButton(sectionFrame, props)
-        btn.Position    = UDim2.new(0, 0, 0, section.YOffset)
-        section.YOffset = section.YOffset + 30
+        btn.Position    = UDim2.new(0, 5, 0, section.YOffset)
+        btn.Size        = UDim2.new(1, -10, 0, 30)
+        section.YOffset = section.YOffset + 35
+        updateCanvas()
         return btn
     end
 
     function section.NewToggle(props)
         local toggle = CreateFrame(sectionFrame, { Size = UDim2.new(1, 0, 0, 30) })
         toggle.Name     = "Toggle"
-        toggle.Position = UDim2.new(0, 0, 0, section.YOffset)
+        toggle.Position = UDim2.new(0, 5, 0, section.YOffset)
 
         local state = false
 
@@ -305,14 +357,15 @@ function Library:NewSection(name)
             end
         end)
 
-        section.YOffset = section.YOffset + 30
+        section.YOffset = section.YOffset + 35
+        updateCanvas()
         return toggle
     end
 
     function section.NewSlider(props)
         local slider = CreateFrame(sectionFrame, { Size = UDim2.new(1, 0, 0, 40) })
         slider.Name     = "Slider"
-        slider.Position = UDim2.new(0, 0, 0, section.YOffset)
+        slider.Position = UDim2.new(0, 5, 0, section.YOffset)
 
         local minVal = props.Min or 0
         local maxVal = props.Max or 100
@@ -367,14 +420,15 @@ function Library:NewSection(name)
             end
         end)
 
-        section.YOffset = section.YOffset + 40
+        section.YOffset = section.YOffset + 45
+        updateCanvas()
         return slider
     end
 
     function section.NewDropdown(props)
         local dropdown = CreateFrame(sectionFrame, { Size = UDim2.new(1, 0, 0, 30) })
         dropdown.Name     = "Dropdown"
-        dropdown.Position = UDim2.new(0, 0, 0, section.YOffset)
+        dropdown.Position = UDim2.new(0, 5, 0, section.YOffset)
 
         local dropBg = Instance.new("Frame")
         dropBg.BackgroundColor3 = Config.Theme.Primary
@@ -421,14 +475,15 @@ function Library:NewSection(name)
         end
 
         dropList.Size   = UDim2.new(1, 0, 0, #options * 25)
-        section.YOffset = section.YOffset + 30
+        section.YOffset = section.YOffset + 35
+        updateCanvas()
         return dropdown
     end
 
     function section.NewTextBox(props)
         local textbox = CreateFrame(sectionFrame, { Size = UDim2.new(1, 0, 0, 30) })
         textbox.Name     = "TextBox"
-        textbox.Position = UDim2.new(0, 0, 0, section.YOffset)
+        textbox.Position = UDim2.new(0, 5, 0, section.YOffset)
 
         local label = CreateLabel(textbox, { Text = props.Text or "TextBox", TextColor = Config.Theme.Text, TextSize = 14 })
         label.Position = UDim2.new(0, 0, 0, 0)
@@ -449,14 +504,15 @@ function Library:NewSection(name)
             if props.Callback then props.Callback(input.Text, enterPressed) end
         end)
 
-        section.YOffset = section.YOffset + 30
+        section.YOffset = section.YOffset + 35
+        updateCanvas()
         return textbox
     end
 
     function section.NewKeybind(props)
         local keybind = CreateFrame(sectionFrame, { Size = UDim2.new(1, 0, 0, 30) })
         keybind.Name     = "Keybind"
-        keybind.Position = UDim2.new(0, 0, 0, section.YOffset)
+        keybind.Position = UDim2.new(0, 5, 0, section.YOffset)
 
         local label = CreateLabel(keybind, { Text = props.Text or "Keybind", TextColor = Config.Theme.Text, TextSize = 14 })
         label.Position = UDim2.new(0, 0, 0, 0)
@@ -482,7 +538,8 @@ function Library:NewSection(name)
             end
         end)
 
-        section.YOffset = section.YOffset + 30
+        section.YOffset = section.YOffset + 35
+        updateCanvas()
         return keybind
     end
 
