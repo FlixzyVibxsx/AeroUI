@@ -243,7 +243,7 @@ function Library.new()
     closeBtn.BorderSizePixel  = 0
     closeBtn.Size             = UDim2.new(0, 18, 0, 18)
     closeBtn.Position         = UDim2.new(1, -26, 0.5, -9)
-    closeBtn.Text             = "✕"
+    closeBtn.Text             = "X"
     closeBtn.TextColor3       = Config.Theme.Text
     closeBtn.TextSize         = 10
     closeBtn.Font             = Enum.Font.GothamBold
@@ -320,7 +320,24 @@ function Library.new()
 
     self.TabYOffset = 8
     self.CurrentTab = nil
-    return self
+
+    function self:SetToggleKey(key)
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+
+        if input.KeyCode == key then
+            self.Window.Visible = not self.Window.Visible
+
+            -- Keep glow synced
+            local glow = self.ScreenGui:FindFirstChild("GlowRing")
+            if glow then
+                glow.Visible = self.Window.Visible
+            end
+        end
+    end)
+end
+
+return self
 end
 
 function Library:Destroy()
@@ -764,6 +781,11 @@ function Library:NewSection(name)
     function section.NewKeybind(props)
         local row       = makeRow(32)
         local isBinding = false
+        local boundKey = nil
+
+        if props.Default and Enum.KeyCode[props.Default] then
+            boundKey = Enum.KeyCode[props.Default]
+        end
         local s         = rowStroke(row)
 
         Label(row, { Text = props.Text or "Keybind", Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 12, 0, 0), FrameSize = UDim2.new(0.6, 0, 1, 0) })
@@ -808,17 +830,40 @@ function Library:NewSection(name)
         end)
 
         UserInputService.InputBegan:Connect(function(input, gp)
-            if isBinding and not gp and input.UserInputType == Enum.UserInputType.Keyboard then
+            if gp then return end
+
+            -- Selecting a new key
+            if isBinding and input.UserInputType == Enum.UserInputType.Keyboard then
                 isBinding = false
-                kbLbl.Text       = input.KeyCode.Name
+                boundKey = input.KeyCode
+
+                kbLbl.Text = input.KeyCode.Name
                 kbLbl.TextColor3 = Config.Theme.TextDim
-                Tween(badge, TI_FAST, { BackgroundColor3 = Config.Theme.Secondary })
-                Tween(badgeStroke, TI_FAST, { Color = Config.Theme.Edge })
-                Tween(s, TI_FAST, { Color = Config.Theme.Edge, Thickness = 1 })
-                if props.Callback then props.Callback(input.KeyCode) end
+
+                Tween(badge, TI_FAST, {
+                    BackgroundColor3 = Config.Theme.Secondary
+                })
+
+                Tween(badgeStroke, TI_FAST, {
+                    Color = Config.Theme.Edge
+                })
+
+                Tween(s, TI_FAST, {
+                Color = Config.Theme.Edge,
+                    Thickness = 1
+                })
+
+                return
+            end
+
+                -- Key was pressed normally
+            if boundKey and input.KeyCode == boundKey then
+                if props.Callback then
+                    props.Callback(boundKey)
+                end
             end
         end)
-        return row
+    return row
     end
 
     return section
