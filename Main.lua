@@ -321,14 +321,20 @@ function Library.new()
     self.TabYOffset = 8
     self.CurrentTab = nil
 
-    function self:SetToggleKey(key)
-        UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
+    self.ToggleKey = Enum.KeyCode.LeftShift
 
-        if input.KeyCode == key then
+    function self:SetToggleKey(key)
+        self.ToggleKey = key
+    end
+
+    UserInputService.InputBegan:Connect(function(input, gp)
+        if gp then return end
+
+        if input.KeyCode == self.ToggleKey then
+            print("Toggle key pressed")
+
             self.Window.Visible = not self.Window.Visible
 
-            -- Keep glow synced
             local glow = self.ScreenGui:FindFirstChild("GlowRing")
             if glow then
                 glow.Visible = self.Window.Visible
@@ -832,17 +838,6 @@ function Library:NewSection(name)
         UserInputService.InputBegan:Connect(function(input, gp)
             
             if gp then return end
-
-            if input.KeyCode == self.ToggleKey then
-                print("Toggle key pressed")
-
-                self.Window.Visible = not self.Window.Visible
-
-                local glow = self.ScreenGui:FindFirstChild("GlowRing")
-                if glow then
-                    glow.Visible = self.Window.Visible
-                end
-            end
             
             -- Selecting a new key
             if isBinding and input.UserInputType == Enum.UserInputType.Keyboard then
