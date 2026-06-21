@@ -341,8 +341,6 @@ function Library.new()
             end
         end
     end)
-
-
     return self
 end
 
