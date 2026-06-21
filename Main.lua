@@ -830,8 +830,20 @@ function Library:NewSection(name)
         end)
 
         UserInputService.InputBegan:Connect(function(input, gp)
+            
             if gp then return end
 
+            if input.KeyCode == self.ToggleKey then
+                print("Toggle key pressed")
+
+                self.Window.Visible = not self.Window.Visible
+
+                local glow = self.ScreenGui:FindFirstChild("GlowRing")
+                if glow then
+                    glow.Visible = self.Window.Visible
+                end
+            end
+            
             -- Selecting a new key
             if isBinding and input.UserInputType == Enum.UserInputType.Keyboard then
                 isBinding = false
