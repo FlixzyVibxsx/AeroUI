@@ -341,9 +341,9 @@ function Library.new()
             end
         end
     end)
-end
 
-return self
+
+    return self
 end
 
 function Library:Destroy()
