@@ -208,7 +208,7 @@ function Library.new()
     winBg.BorderSizePixel  = 0
     winBg.Size             = UDim2.new(1, 0, 1, 0)
     winBg.Parent           = self.Window
-    Corner(winBg, 12)
+    local winBgCorner = Corner(winBg, 12)
 
     -- Title bar
     local titleBar = Instance.new("Frame")
@@ -413,8 +413,13 @@ function Library.new()
             local minimizedRadius = math.floor(titleH / 2)
             windowCorner.CornerRadius = UDim.new(0, minimizedRadius)
             titleCorner.CornerRadius = UDim.new(0, minimizedRadius)
+            winBgCorner.CornerRadius = UDim.new(0, minimizedRadius)
+            titleFill.Visible = false
 
             local minimizedW = Config.Size.X.Offset
+            self.Window.Size = UDim2.new(0, minimizedW, 0, self.Window.Size.Y.Offset)
+            glowRing.Size = UDim2.new(0, minimizedW, 0, glowRing.Size.Y.Offset)
+
             Tween(self.Window, TI_MED, { Size = UDim2.new(0, minimizedW, 0, titleH) })
             Tween(glowRing, TI_MED, { Size = UDim2.new(0, minimizedW, 0, titleH) })
             minBtn.Text = "+"
@@ -428,6 +433,8 @@ function Library.new()
 
             windowCorner.CornerRadius = UDim.new(0, 12)
             titleCorner.CornerRadius = UDim.new(0, 12)
+            winBgCorner.CornerRadius = UDim.new(0, 12)
+            titleFill.Visible = true
 
             Tween(self.Window, TI_MED, { Size = UDim2.new(0, restoreW, 0, restoreH) })
             Tween(glowRing, TI_MED, { Size = UDim2.new(0, restoreW, 0, restoreH) })
