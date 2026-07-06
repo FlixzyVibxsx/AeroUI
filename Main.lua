@@ -409,11 +409,14 @@ function Library.new()
             divider.Visible = false
             resizeHandle.Visible = false
 
-            windowCorner.CornerRadius = UDim.new(0, 12)
-            titleCorner.CornerRadius = UDim.new(0, 12)
+            -- Fully rounded minimized top bar look
+            local minimizedRadius = math.floor(titleH / 2)
+            windowCorner.CornerRadius = UDim.new(0, minimizedRadius)
+            titleCorner.CornerRadius = UDim.new(0, minimizedRadius)
 
-            Tween(self.Window, TI_MED, { Size = UDim2.new(0, self.ExpandedWidth, 0, titleH) })
-            Tween(glowRing, TI_MED, { Size = UDim2.new(0, self.ExpandedWidth, 0, titleH) })
+            local minimizedW = Config.Size.X.Offset
+            Tween(self.Window, TI_MED, { Size = UDim2.new(0, minimizedW, 0, titleH) })
+            Tween(glowRing, TI_MED, { Size = UDim2.new(0, minimizedW, 0, titleH) })
             minBtn.Text = "+"
         else
             local restoreH = math.max(minH, self.ExpandedHeight or minH)
