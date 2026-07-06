@@ -254,10 +254,9 @@ function Library.new()
     closeBtn.MouseLeave:Connect(function() Tween(closeBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Error }) end)
     closeBtn.MouseButton1Click:Connect(function() self:Destroy() end)
 
-    -- Resize constraints (keep original aspect ratio and minimum size)
+    -- Resize constraints (minimum size; free axis resizing)
     local minW = Config.Size.X.Offset
     local minH = Config.Size.Y.Offset
-    local aspectRatio = minW / minH
     local resizing = false
 
     -- Resize handle (bottom-right)
@@ -314,13 +313,10 @@ function Library.new()
         if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
             local currentMouse = UserInputService:GetMouseLocation()
             local deltaX = currentMouse.X - resizeStartMouse.X
-            local newW = math.max(minW, resizeStartSize.X.Offset + deltaX)
-            local newH = math.floor(newW / aspectRatio + 0.5)
+            local deltaY = currentMouse.Y - resizeStartMouse.Y
 
-            if newH < minH then
-                newH = minH
-                newW = math.floor(newH * aspectRatio + 0.5)
-            end
+            local newW = math.max(minW, resizeStartSize.X.Offset + deltaX)
+            local newH = math.max(minH, resizeStartSize.Y.Offset + deltaY)
 
             self.Window.Size = UDim2.new(0, newW, 0, newH)
             glowRing.Size    = UDim2.new(0, newW, 0, newH)
@@ -664,32 +660,38 @@ function Library:NewSection(name)
         Corner(handle, 7)
         Stroke(handle, Config.Theme.Accent, 1)
 
-        local trackLeft   = 12  -- matches track.Position X offset
-        local trackWidth  = 0   -- resolved after first render via AbsoluteSize
+        local trackLeft = 12  -- matches track.Position X offset
+        local currentValue = math.clamp(props.Value or minVal, minVal, maxVal)
+
+        local function valueToRel(value)
+            if maxVal <= minVal then return 0 end
+            return math.clamp((value - minVal) / (maxVal - minVal), 0, 1)
+        end
+
+        local function syncSliderVisuals()
+            local tWidth = track.AbsoluteSize.X
+            local relX = valueToRel(currentValue)
+            fill.Size = UDim2.new(relX, 0, 1, 0)
+            handle.Position = UDim2.new(0, trackLeft + relX * tWidth, 0, 33)
+            valLbl.Text = tostring(currentValue)
+        end
 
         local dragging = false
         local function update(screenX)
-            -- Use AbsolutePosition/Size once rendered
             local tLeft  = track.AbsolutePosition.X
             local tWidth = track.AbsoluteSize.X
             if tWidth == 0 then return end
-            local relX  = math.clamp((screenX - tLeft) / tWidth, 0, 1)
-            local value = math.floor(minVal + relX * (maxVal - minVal))
-            fill.Size       = UDim2.new(relX, 0, 1, 0)
-            -- move handle: X = track left offset + relX * track pixel width
-            handle.Position = UDim2.new(0, trackLeft + relX * tWidth, 0, 33)
-            valLbl.Text     = tostring(value)
-            if props.Callback then props.Callback(value) end
+
+            local relX = math.clamp((screenX - tLeft) / tWidth, 0, 1)
+            currentValue = math.floor(minVal + relX * (maxVal - minVal))
+            syncSliderVisuals()
+
+            if props.Callback then props.Callback(currentValue) end
         end
 
-        -- Set initial position after a frame so AbsoluteSize is valid
-        local initVal = math.clamp(props.Value or minVal, minVal, maxVal)
-        local initRel = (maxVal > minVal) and ((initVal - minVal) / (maxVal - minVal)) or 0
-        fill.Size = UDim2.new(initRel, 0, 1, 0)
-        task.defer(function()
-            local tWidth = track.AbsoluteSize.X
-            handle.Position = UDim2.new(0, trackLeft + initRel * tWidth, 0, 33)
-        end)
+        -- Set initial position/value after a frame so AbsoluteSize is valid
+        task.defer(syncSliderVisuals)
+        track:GetPropertyChangedSignal("AbsoluteSize"):Connect(syncSliderVisuals)
 
         -- Invisible hit area covering the track zone
         local hitArea = Instance.new("TextButton")
