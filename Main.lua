@@ -414,8 +414,15 @@ function Library.new()
             windowCorner.CornerRadius = UDim.new(0, minimizedRadius)
             titleCorner.CornerRadius = UDim.new(0, minimizedRadius)
             winBgCorner.CornerRadius = UDim.new(0, minimizedRadius)
-            titleFill.Visible = false
+            titleFill.Visible = true
             titleBar.ClipsDescendants = true
+
+            local fillCorner = titleFill:FindFirstChildOfClass("UICorner")
+            if not fillCorner then
+                fillCorner = Instance.new("UICorner")
+                fillCorner.Parent = titleFill
+            end
+            fillCorner.CornerRadius = UDim.new(0, minimizedRadius)
 
             local minimizedW = Config.Size.X.Offset
             self.Window.Size = UDim2.new(0, minimizedW, 0, self.Window.Size.Y.Offset)
@@ -437,6 +444,11 @@ function Library.new()
             winBgCorner.CornerRadius = UDim.new(0, 12)
             titleFill.Visible = true
             titleBar.ClipsDescendants = false
+
+            local fillCorner = titleFill:FindFirstChildOfClass("UICorner")
+            if fillCorner then
+                fillCorner.CornerRadius = UDim.new(0, 0)
+            end
 
             Tween(self.Window, TI_MED, { Size = UDim2.new(0, restoreW, 0, restoreH) })
             Tween(glowRing, TI_MED, { Size = UDim2.new(0, restoreW, 0, restoreH) })
