@@ -254,10 +254,81 @@ function Library.new()
     closeBtn.MouseLeave:Connect(function() Tween(closeBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Error }) end)
     closeBtn.MouseButton1Click:Connect(function() self:Destroy() end)
 
+    -- Resize constraints (keep original aspect ratio and minimum size)
+    local minW = Config.Size.X.Offset
+    local minH = Config.Size.Y.Offset
+    local aspectRatio = minW / minH
+    local resizing = false
+
+    -- Resize handle (bottom-right)
+    local resizeHandle = Instance.new("Frame")
+    resizeHandle.Name = "ResizeHandle"
+    resizeHandle.BackgroundColor3 = Config.Theme.Accent
+    resizeHandle.BackgroundTransparency = 0.15
+    resizeHandle.BorderSizePixel = 0
+    resizeHandle.Size = UDim2.new(0, 16, 0, 16)
+    resizeHandle.Position = UDim2.new(1, -18, 1, -18)
+    resizeHandle.ZIndex = 5
+    resizeHandle.Parent = self.Window
+    Corner(resizeHandle, 4)
+    Stroke(resizeHandle, Config.Theme.Edge, 1)
+
+    local rg1 = Instance.new("Frame")
+    rg1.BackgroundColor3 = Config.Theme.Text
+    rg1.BorderSizePixel = 0
+    rg1.Size = UDim2.new(0, 2, 0, 6)
+    rg1.Position = UDim2.new(1, -6, 1, -6)
+    rg1.Rotation = 45
+    rg1.Parent = resizeHandle
+
+    local rg2 = Instance.new("Frame")
+    rg2.BackgroundColor3 = Config.Theme.Text
+    rg2.BorderSizePixel = 0
+    rg2.Size = UDim2.new(0, 2, 0, 9)
+    rg2.Position = UDim2.new(1, -10, 1, -7)
+    rg2.Rotation = 45
+    rg2.Parent = resizeHandle
+
+    local resizeBtn = Instance.new("TextButton")
+    resizeBtn.BackgroundTransparency = 1
+    resizeBtn.Size = UDim2.new(1, 0, 1, 0)
+    resizeBtn.Text = ""
+    resizeBtn.Parent = resizeHandle
+
+    local resizeStartMouse, resizeStartSize
+
+    resizeBtn.MouseButton1Down:Connect(function()
+        resizing = true
+        resizeStartMouse = UserInputService:GetMouseLocation()
+        resizeStartSize = self.Window.Size
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizing = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - resizeStartMouse
+            local newW = math.max(minW, resizeStartSize.X.Offset + delta.X)
+            local newH = math.floor(newW / aspectRatio + 0.5)
+
+            if newH < minH then
+                newH = minH
+                newW = math.floor(newH * aspectRatio + 0.5)
+            end
+
+            self.Window.Size = UDim2.new(0, newW, 0, newH)
+            glowRing.Size    = UDim2.new(0, newW, 0, newH)
+        end
+    end)
+
     -- Drag
     local dragging, dragInput, mousePos, framePos
     titleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 and not resizing then
             dragging = true; mousePos = input.Position; framePos = self.Window.Position
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then dragging = false end
@@ -268,7 +339,7 @@ function Library.new()
         if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
     end)
     UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
+        if input == dragInput and dragging and not resizing then
             local d = input.Position - mousePos
             local newPos = UDim2.new(framePos.X.Scale, framePos.X.Offset + d.X, framePos.Y.Scale, framePos.Y.Offset + d.Y)
             self.Window.Position = newPos
