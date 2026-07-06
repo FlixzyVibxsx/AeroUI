@@ -229,6 +229,7 @@ function Library.new()
     local titleFillCorner = Instance.new("UICorner")
     titleFillCorner.Parent = titleFill
     titleFillCorner.CornerRadius = UDim.new(0, 0)
+    local titleFillOriginalSize = titleFill.Size
 
     -- Title icon dot
     local dot = Instance.new("Frame")
@@ -418,6 +419,7 @@ function Library.new()
             titleCorner.CornerRadius = UDim.new(0, minimizedRadius)
             winBgCorner.CornerRadius = UDim.new(0, minimizedRadius)
             titleFill.Visible = false
+            titleFill.Size = UDim2.new(1, 0, 0, 0)
             titleBar.ClipsDescendants = true
             titleFillCorner.CornerRadius = UDim.new(0, 0)
 
@@ -440,6 +442,7 @@ function Library.new()
             titleCorner.CornerRadius = UDim.new(0, 12)
             winBgCorner.CornerRadius = UDim.new(0, 12)
             titleFill.Visible = true
+            titleFill.Size = titleFillOriginalSize
             titleBar.ClipsDescendants = false
             titleFillCorner.CornerRadius = UDim.new(0, 0)
 
