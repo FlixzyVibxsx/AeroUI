@@ -311,7 +311,8 @@ function Library.new()
 
     UserInputService.InputChanged:Connect(function(input)
         if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - resizeStartMouse
+            local mousePos = Vector2.new(input.Position.X, input.Position.Y)
+            local delta = mousePos - resizeStartMouse
             local newW = math.max(minW, resizeStartSize.X.Offset + delta.X)
             local newH = math.floor(newW / aspectRatio + 0.5)
 
