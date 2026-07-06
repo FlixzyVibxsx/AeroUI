@@ -255,7 +255,7 @@ function Library.new()
     minBtn.Size             = UDim2.new(0, 18, 0, 18)
     minBtn.Position         = UDim2.new(1, -50, 0.5, -9)
     minBtn.Text             = "–"
-    minBtn.TextColor3       = Config.Theme.Text
+    minBtn.TextColor3       = Config.Theme.CloseText
     minBtn.TextSize         = 14
     minBtn.Font             = Enum.Font.GothamBold
     minBtn.Name             = "MinBtn"
@@ -265,7 +265,7 @@ function Library.new()
     minBtn.MouseLeave:Connect(function() Tween(minBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Elevated }) end)
 
     local closeBtn = Instance.new("TextButton")
-    closeBtn.BackgroundColor3 = Config.Theme.Close
+    closeBtn.BackgroundColor3 = Config.Theme.Elevated
     closeBtn.BorderSizePixel  = 0
     closeBtn.Size             = UDim2.new(0, 18, 0, 18)
     closeBtn.Position         = UDim2.new(1, -26, 0.5, -9)
@@ -276,8 +276,8 @@ function Library.new()
     closeBtn.Name             = "CloseBtn"
     closeBtn.Parent           = titleBar
     Corner(closeBtn, 5)
-    closeBtn.MouseEnter:Connect(function() Tween(closeBtn, TI_FAST, { BackgroundColor3 = Color3.fromRGB(255, 110, 110) }) end)
-    closeBtn.MouseLeave:Connect(function() Tween(closeBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Close }) end)
+    closeBtn.MouseEnter:Connect(function() Tween(closeBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Accent }) end)
+    closeBtn.MouseLeave:Connect(function() Tween(closeBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Elevated }) end)
     closeBtn.MouseButton1Click:Connect(function() self:Destroy() end)
 
     -- Resize constraints (minimum size; free axis resizing)
