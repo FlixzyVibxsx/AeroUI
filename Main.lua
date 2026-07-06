@@ -299,7 +299,8 @@ function Library.new()
 
     resizeBtn.MouseButton1Down:Connect(function()
         resizing = true
-        resizeStartMouse = UserInputService:GetMouseLocation()
+        local startMouse = UserInputService:GetMouseLocation()
+        resizeStartMouse = Vector2.new(startMouse.X, startMouse.Y)
         resizeStartSize = self.Window.Size
     end)
 
@@ -311,9 +312,9 @@ function Library.new()
 
     UserInputService.InputChanged:Connect(function(input)
         if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local mousePos = Vector2.new(input.Position.X, input.Position.Y)
-            local delta = mousePos - resizeStartMouse
-            local newW = math.max(minW, resizeStartSize.X.Offset + delta.X)
+            local currentMouse = UserInputService:GetMouseLocation()
+            local deltaX = currentMouse.X - resizeStartMouse.X
+            local newW = math.max(minW, resizeStartSize.X.Offset + deltaX)
             local newH = math.floor(newW / aspectRatio + 0.5)
 
             if newH < minH then
