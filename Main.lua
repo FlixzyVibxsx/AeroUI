@@ -21,6 +21,8 @@ local Config = {
         TextDim    = Color3.fromRGB(140, 138, 165),
         Success    = Color3.fromRGB(60, 210, 120),
         Error      = Color3.fromRGB(255, 75, 75),
+        Close      = Color3.fromRGB(28, 28, 36),
+        CloseText  = Color3.fromRGB(110, 100, 255),
     },
     Size  = UDim2.new(0, 380, 0, 480),
     Title = "Aero UI",
@@ -263,19 +265,19 @@ function Library.new()
     minBtn.MouseLeave:Connect(function() Tween(minBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Elevated }) end)
 
     local closeBtn = Instance.new("TextButton")
-    closeBtn.BackgroundColor3 = Config.Theme.Error
+    closeBtn.BackgroundColor3 = Config.Theme.Close
     closeBtn.BorderSizePixel  = 0
     closeBtn.Size             = UDim2.new(0, 18, 0, 18)
     closeBtn.Position         = UDim2.new(1, -26, 0.5, -9)
     closeBtn.Text             = "X"
-    closeBtn.TextColor3       = Config.Theme.Text
+    closeBtn.TextColor3       = Config.Theme.CloseText
     closeBtn.TextSize         = 10
     closeBtn.Font             = Enum.Font.GothamBold
     closeBtn.Name             = "CloseBtn"
     closeBtn.Parent           = titleBar
     Corner(closeBtn, 5)
     closeBtn.MouseEnter:Connect(function() Tween(closeBtn, TI_FAST, { BackgroundColor3 = Color3.fromRGB(255, 110, 110) }) end)
-    closeBtn.MouseLeave:Connect(function() Tween(closeBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Error }) end)
+    closeBtn.MouseLeave:Connect(function() Tween(closeBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Close }) end)
     closeBtn.MouseButton1Click:Connect(function() self:Destroy() end)
 
     -- Resize constraints (minimum size; free axis resizing)
