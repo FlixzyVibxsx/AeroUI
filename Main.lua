@@ -415,6 +415,7 @@ function Library.new()
             titleCorner.CornerRadius = UDim.new(0, minimizedRadius)
             winBgCorner.CornerRadius = UDim.new(0, minimizedRadius)
             titleFill.Visible = false
+            titleBar.ClipsDescendants = true
 
             local minimizedW = Config.Size.X.Offset
             self.Window.Size = UDim2.new(0, minimizedW, 0, self.Window.Size.Y.Offset)
@@ -435,6 +436,7 @@ function Library.new()
             titleCorner.CornerRadius = UDim.new(0, 12)
             winBgCorner.CornerRadius = UDim.new(0, 12)
             titleFill.Visible = true
+            titleBar.ClipsDescendants = false
 
             Tween(self.Window, TI_MED, { Size = UDim2.new(0, restoreW, 0, restoreH) })
             Tween(glowRing, TI_MED, { Size = UDim2.new(0, restoreW, 0, restoreH) })
