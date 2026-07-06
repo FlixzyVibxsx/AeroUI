@@ -1,4 +1,5 @@
 -- Aero UI Library
+--// version 0.45.0
 local Library = {}
 Library.__index = Library
 
@@ -237,7 +238,25 @@ function Library.new()
 
     Label(titleBar, { Text = Config.Title, Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 28, 0, 0) })
 
-    -- Close button
+    -- Minimize + close buttons
+    self.IsMinimized = false
+    self.ExpandedHeight = Config.Size.Y.Offset
+
+    local minBtn = Instance.new("TextButton")
+    minBtn.BackgroundColor3 = Config.Theme.Elevated
+    minBtn.BorderSizePixel  = 0
+    minBtn.Size             = UDim2.new(0, 18, 0, 18)
+    minBtn.Position         = UDim2.new(1, -50, 0.5, -9)
+    minBtn.Text             = "–"
+    minBtn.TextColor3       = Config.Theme.Text
+    minBtn.TextSize         = 14
+    minBtn.Font             = Enum.Font.GothamBold
+    minBtn.Name             = "MinBtn"
+    minBtn.Parent           = titleBar
+    Corner(minBtn, 5)
+    minBtn.MouseEnter:Connect(function() Tween(minBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Accent }) end)
+    minBtn.MouseLeave:Connect(function() Tween(minBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Elevated }) end)
+
     local closeBtn = Instance.new("TextButton")
     closeBtn.BackgroundColor3 = Config.Theme.Error
     closeBtn.BorderSizePixel  = 0
@@ -373,6 +392,40 @@ function Library.new()
 
     self.TabYOffset = 8
     self.CurrentTab = nil
+
+    local function setMinimized(minimized)
+        if minimized == self.IsMinimized then return end
+        self.IsMinimized = minimized
+
+        local currentW = self.Window.Size.X.Offset
+        local titleH = titleBar.Size.Y.Offset
+
+        if minimized then
+            self.ExpandedHeight = math.max(titleH, self.Window.Size.Y.Offset)
+            self.TabBar.Visible = false
+            self.Content.Visible = false
+            divider.Visible = false
+            resizeHandle.Visible = false
+
+            Tween(self.Window, TI_MED, { Size = UDim2.new(0, currentW, 0, titleH) })
+            Tween(glowRing, TI_MED, { Size = UDim2.new(0, currentW, 0, titleH) })
+            minBtn.Text = "+"
+        else
+            local restoreH = math.max(minH, self.ExpandedHeight or minH)
+            self.TabBar.Visible = true
+            self.Content.Visible = true
+            divider.Visible = true
+            resizeHandle.Visible = true
+
+            Tween(self.Window, TI_MED, { Size = UDim2.new(0, currentW, 0, restoreH) })
+            Tween(glowRing, TI_MED, { Size = UDim2.new(0, currentW, 0, restoreH) })
+            minBtn.Text = "–"
+        end
+    end
+
+    minBtn.MouseButton1Click:Connect(function()
+        setMinimized(not self.IsMinimized)
+    end)
 
     self.ToggleKey = Enum.KeyCode.LeftShift
 
