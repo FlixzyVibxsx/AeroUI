@@ -226,6 +226,9 @@ function Library.new()
     titleFill.Size             = UDim2.new(1, 0, 0, 12)
     titleFill.Position         = UDim2.new(0, 0, 1, -12)
     titleFill.Parent           = titleBar
+    local titleFillCorner = Instance.new("UICorner")
+    titleFillCorner.Parent = titleFill
+    titleFillCorner.CornerRadius = UDim.new(0, 0)
 
     -- Title icon dot
     local dot = Instance.new("Frame")
@@ -414,15 +417,9 @@ function Library.new()
             windowCorner.CornerRadius = UDim.new(0, minimizedRadius)
             titleCorner.CornerRadius = UDim.new(0, minimizedRadius)
             winBgCorner.CornerRadius = UDim.new(0, minimizedRadius)
-            titleFill.Visible = true
+            titleFill.Visible = false
             titleBar.ClipsDescendants = true
-
-            local fillCorner = titleFill:FindFirstChildOfClass("UICorner")
-            if not fillCorner then
-                fillCorner = Instance.new("UICorner")
-                fillCorner.Parent = titleFill
-            end
-            fillCorner.CornerRadius = UDim.new(0, minimizedRadius)
+            titleFillCorner.CornerRadius = UDim.new(0, 0)
 
             local minimizedW = Config.Size.X.Offset
             self.Window.Size = UDim2.new(0, minimizedW, 0, self.Window.Size.Y.Offset)
@@ -444,11 +441,7 @@ function Library.new()
             winBgCorner.CornerRadius = UDim.new(0, 12)
             titleFill.Visible = true
             titleBar.ClipsDescendants = false
-
-            local fillCorner = titleFill:FindFirstChildOfClass("UICorner")
-            if fillCorner then
-                fillCorner.CornerRadius = UDim.new(0, 0)
-            end
+            titleFillCorner.CornerRadius = UDim.new(0, 0)
 
             Tween(self.Window, TI_MED, { Size = UDim2.new(0, restoreW, 0, restoreH) })
             Tween(glowRing, TI_MED, { Size = UDim2.new(0, restoreW, 0, restoreH) })
