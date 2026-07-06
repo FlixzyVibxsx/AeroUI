@@ -199,7 +199,7 @@ function Library.new()
     self.Window.Position         = UDim2.new(0.5, -190, 0.5, -240)
     self.Window.Name             = "Window"
     self.Window.Parent           = self.ScreenGui
-    Corner(self.Window, 12)
+    local windowCorner = Corner(self.Window, 12)
     Stroke(self.Window, Config.Theme.Accent, 1.5)
 
     -- Rounded background that clips to window shape
@@ -217,7 +217,7 @@ function Library.new()
     titleBar.Size             = UDim2.new(1, 0, 0, 38)
     titleBar.Name             = "TitleBar"
     titleBar.Parent           = self.Window
-    Corner(titleBar, 12)
+    local titleCorner = Corner(titleBar, 12)
 
     -- Square off bottom corners of title bar
     local titleFill = Instance.new("Frame")
@@ -241,6 +241,7 @@ function Library.new()
     -- Minimize + close buttons
     self.IsMinimized = false
     self.ExpandedHeight = Config.Size.Y.Offset
+    self.ExpandedWidth = Config.Size.X.Offset
 
     local minBtn = Instance.new("TextButton")
     minBtn.BackgroundColor3 = Config.Theme.Elevated
@@ -402,23 +403,31 @@ function Library.new()
 
         if minimized then
             self.ExpandedHeight = math.max(titleH, self.Window.Size.Y.Offset)
+            self.ExpandedWidth = math.max(minW, self.Window.Size.X.Offset)
             self.TabBar.Visible = false
             self.Content.Visible = false
             divider.Visible = false
             resizeHandle.Visible = false
 
-            Tween(self.Window, TI_MED, { Size = UDim2.new(0, currentW, 0, titleH) })
-            Tween(glowRing, TI_MED, { Size = UDim2.new(0, currentW, 0, titleH) })
+            windowCorner.CornerRadius = UDim.new(0, 12)
+            titleCorner.CornerRadius = UDim.new(0, 12)
+
+            Tween(self.Window, TI_MED, { Size = UDim2.new(0, self.ExpandedWidth, 0, titleH) })
+            Tween(glowRing, TI_MED, { Size = UDim2.new(0, self.ExpandedWidth, 0, titleH) })
             minBtn.Text = "+"
         else
             local restoreH = math.max(minH, self.ExpandedHeight or minH)
+            local restoreW = Config.Size.X.Offset
             self.TabBar.Visible = true
             self.Content.Visible = true
             divider.Visible = true
             resizeHandle.Visible = true
 
-            Tween(self.Window, TI_MED, { Size = UDim2.new(0, currentW, 0, restoreH) })
-            Tween(glowRing, TI_MED, { Size = UDim2.new(0, currentW, 0, restoreH) })
+            windowCorner.CornerRadius = UDim.new(0, 12)
+            titleCorner.CornerRadius = UDim.new(0, 12)
+
+            Tween(self.Window, TI_MED, { Size = UDim2.new(0, restoreW, 0, restoreH) })
+            Tween(glowRing, TI_MED, { Size = UDim2.new(0, restoreW, 0, restoreH) })
             minBtn.Text = "–"
         end
     end
