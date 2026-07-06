@@ -272,22 +272,6 @@ function Library.new()
     Corner(resizeHandle, 4)
     Stroke(resizeHandle, Config.Theme.Edge, 1)
 
-    local rg1 = Instance.new("Frame")
-    rg1.BackgroundColor3 = Config.Theme.Text
-    rg1.BorderSizePixel = 0
-    rg1.Size = UDim2.new(0, 2, 0, 6)
-    rg1.Position = UDim2.new(1, -6, 1, -6)
-    rg1.Rotation = 45
-    rg1.Parent = resizeHandle
-
-    local rg2 = Instance.new("Frame")
-    rg2.BackgroundColor3 = Config.Theme.Text
-    rg2.BorderSizePixel = 0
-    rg2.Size = UDim2.new(0, 2, 0, 9)
-    rg2.Position = UDim2.new(1, -10, 1, -7)
-    rg2.Rotation = 45
-    rg2.Parent = resizeHandle
-
     local resizeBtn = Instance.new("TextButton")
     resizeBtn.BackgroundTransparency = 1
     resizeBtn.Size = UDim2.new(1, 0, 1, 0)
