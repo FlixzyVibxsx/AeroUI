@@ -1,5 +1,5 @@
--- Aero UI Library
---// version 0.45.0
+--Aero UI
+--//Version 0.9.1
 local Library = {}
 Library.__index = Library
 
@@ -32,7 +32,7 @@ local TI_FAST   = TweenInfo.new(0.18, Enum.EasingStyle.Quint)
 local TI_MED    = TweenInfo.new(0.28, Enum.EasingStyle.Quint)
 local TI_SLOW   = TweenInfo.new(0.4,  Enum.EasingStyle.Quint)
 local ITEM_PAD  = 6
-local CORNER    = 8   -- global corner radius
+local CORNER    = 8
 
 local PARENT = game:GetService("RunService"):IsStudio()
     and Player:FindFirstChild("PlayerGui") or CoreGui
@@ -40,8 +40,6 @@ local PARENT = game:GetService("RunService"):IsStudio()
 for _, v in next, PARENT:GetChildren() do
     if v.Name == "AeroUI" then v:Destroy() end
 end
-
--- ── Helpers ──────────────────────────────────────────────────────────────────
 
 local function Corner(parent, radius)
     local c = Instance.new("UICorner")
@@ -78,7 +76,6 @@ local function Tween(obj, info, props)
     TweenService:Create(obj, info, props):Play()
 end
 
--- Hover glow effect on a frame
 local function HoverGlow(frame, stroke)
     frame.MouseEnter:Connect(function()
         Tween(stroke, TI_FAST, { Color = Config.Theme.Accent, Thickness = 1.5 })
@@ -87,8 +84,6 @@ local function HoverGlow(frame, stroke)
         Tween(stroke, TI_FAST, { Color = Config.Theme.Edge, Thickness = 1 })
     end)
 end
-
--- ── Notifications ─────────────────────────────────────────────────────────────
 
 local NotifContainer
 local function GetNotifContainer()
@@ -115,7 +110,6 @@ function Library:Notify(title, message, duration)
     Corner(notif, 10)
     Stroke(notif, Config.Theme.Accent, 1)
 
-    -- Accent left bar
     local bar = Instance.new("Frame")
     bar.BackgroundColor3 = Config.Theme.Accent
     bar.BorderSizePixel  = 0
@@ -134,8 +128,6 @@ function Library:Notify(title, message, duration)
     end)
 end
 
--- ── Library.new ───────────────────────────────────────────────────────────────
-
 function Library.new()
     local self = setmetatable({}, Library)
 
@@ -145,12 +137,6 @@ function Library.new()
     self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent         = PARENT
 
-    -- Neon glow: use a thick UIStroke with a second outer stroke frame
-    -- This avoids any child frame bleeding over content
-    -- (stroke applied after Window is created below)
-
-    -- Outer glow ring (separate frame, same size, behind window)
-    -- We use ZIndexBehavior.Sibling so lower ZIndex = behind
     local glowRing = Instance.new("Frame")
     glowRing.BackgroundTransparency = 1
     glowRing.BorderSizePixel        = 0
@@ -161,7 +147,6 @@ function Library.new()
     glowRing.Parent                 = self.ScreenGui
     Corner(glowRing, 14)
 
-    -- Layer 1 — tight glow
     local g1 = Instance.new("Frame")
     g1.BackgroundColor3       = Config.Theme.Accent
     g1.BackgroundTransparency = 0.6
@@ -172,7 +157,6 @@ function Library.new()
     g1.Parent                 = glowRing
     Corner(g1, 16)
 
-    -- Layer 2 — medium glow
     local g2 = Instance.new("Frame")
     g2.BackgroundColor3       = Config.Theme.Accent
     g2.BackgroundTransparency = 0.78
@@ -183,7 +167,6 @@ function Library.new()
     g2.Parent                 = glowRing
     Corner(g2, 22)
 
-    -- Layer 3 — wide soft glow
     local g3 = Instance.new("Frame")
     g3.BackgroundColor3       = Config.Theme.Accent
     g3.BackgroundTransparency = 0.90
@@ -204,7 +187,6 @@ function Library.new()
     local windowCorner = Corner(self.Window, 12)
     Stroke(self.Window, Config.Theme.Accent, 1.5)
 
-    -- Rounded background that clips to window shape
     local winBg = Instance.new("Frame")
     winBg.BackgroundColor3 = Config.Theme.Secondary
     winBg.BorderSizePixel  = 0
@@ -212,7 +194,6 @@ function Library.new()
     winBg.Parent           = self.Window
     local winBgCorner = Corner(winBg, 12)
 
-    -- Title bar
     local titleBar = Instance.new("Frame")
     titleBar.BackgroundColor3 = Config.Theme.Primary
     titleBar.BorderSizePixel  = 0
@@ -221,7 +202,6 @@ function Library.new()
     titleBar.Parent           = self.Window
     local titleCorner = Corner(titleBar, 12)
 
-    -- Square off bottom corners of title bar
     local titleFill = Instance.new("Frame")
     titleFill.BackgroundColor3 = Config.Theme.Primary
     titleFill.BorderSizePixel  = 0
@@ -233,7 +213,6 @@ function Library.new()
     titleFillCorner.CornerRadius = UDim.new(0, 0)
     local titleFillOriginalSize = titleFill.Size
 
-    -- Title icon dot
     local dot = Instance.new("Frame")
     dot.BackgroundColor3 = Config.Theme.Accent
     dot.BorderSizePixel  = 0
@@ -244,7 +223,27 @@ function Library.new()
 
     Label(titleBar, { Text = Config.Title, Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 28, 0, 0) })
 
-    -- Minimize + close buttons
+    self.IsMinimized = false
+    self.ExpandedHeight = Config.Size.Y.Offset
+    self.ExpandedWidth = Config.Size.X.Offset
+
+    local minBtn = Instance.new("TextButton")
+    minBtn.BackgroundColor3 = Config.Theme.Elevated
+    minBtn.BorderSizePixel  = 0
+    minBtn.Size             = UDim2.new(0, 18, 0, 18)
+    minBtn.Position         = UDim2.new(1, -50, 0.5, -9)
+    minBtn.Text             = "–"
+    minBtn.TextColor3       = Config.Theme.CloseText
+    minBtn.TextSize         = 14
+    minBtn.Font             = Enum.Font.GothamBold
+    minBtn.Name             = "MinBtn"
+    minBtn.Parent           = titleBar
+    Corner(minBtn, 5)
+    dot.Parent           = titleBar
+    Corner(dot, 3)
+
+    Label(titleBar, { Text = Config.Title, Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 28, 0, 0) })
+
     self.IsMinimized = false
     self.ExpandedHeight = Config.Size.Y.Offset
     self.ExpandedWidth = Config.Size.X.Offset
@@ -280,12 +279,10 @@ function Library.new()
     closeBtn.MouseLeave:Connect(function() Tween(closeBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Elevated }) end)
     closeBtn.MouseButton1Click:Connect(function() self:Destroy() end)
 
-    -- Resize constraints (minimum size; free axis resizing)
     local minW = Config.Size.X.Offset
     local minH = Config.Size.Y.Offset
     local resizing = false
 
-    -- Resize handle (bottom-right)
     local resizeHandle = Instance.new("Frame")
     resizeHandle.Name = "ResizeHandle"
     resizeHandle.BackgroundColor3 = Config.Theme.Accent
@@ -333,7 +330,6 @@ function Library.new()
         end
     end)
 
-    -- Drag
     local dragging, dragInput, mousePos, framePos
     titleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 and not resizing then
@@ -355,7 +351,6 @@ function Library.new()
         end
     end)
 
-    -- Tab sidebar
     self.TabBar = Instance.new("Frame")
     self.TabBar.BackgroundColor3 = Config.Theme.Primary
     self.TabBar.BorderSizePixel  = 0
@@ -365,7 +360,6 @@ function Library.new()
     self.TabBar.Parent           = self.Window
     Corner(self.TabBar, 12)
 
-    -- Square off top corners of TabBar (title bar covers them anyway)
     local tabBarTopFill = Instance.new("Frame")
     tabBarTopFill.BackgroundColor3 = Config.Theme.Primary
     tabBarTopFill.BorderSizePixel  = 0
@@ -373,7 +367,6 @@ function Library.new()
     tabBarTopFill.Position         = UDim2.new(0, 0, 0, 0)
     tabBarTopFill.Parent           = self.TabBar
 
-    -- Square off top-right corner only (right side is flush with divider)
     local tabBarRightFill = Instance.new("Frame")
     tabBarRightFill.BackgroundColor3 = Config.Theme.Primary
     tabBarRightFill.BorderSizePixel  = 0
@@ -381,7 +374,6 @@ function Library.new()
     tabBarRightFill.Position         = UDim2.new(1, -12, 0, 0)
     tabBarRightFill.Parent           = self.TabBar
 
-    -- Divider line between sidebar and content
     local divider = Instance.new("Frame")
     divider.BackgroundColor3 = Config.Theme.Edge
     divider.BorderSizePixel  = 0
@@ -389,7 +381,6 @@ function Library.new()
     divider.Position         = UDim2.new(0, 110, 0, 38)
     divider.Parent           = self.Window
 
-    -- Content area
     self.Content = Instance.new("Frame")
     self.Content.BackgroundTransparency = 1
     self.Content.Size     = UDim2.new(1, -111, 1, -38)
@@ -415,7 +406,6 @@ function Library.new()
             divider.Visible = false
             resizeHandle.Visible = false
 
-            -- Fully rounded minimized top bar look
             local minimizedRadius = math.floor(titleH / 2)
             windowCorner.CornerRadius = UDim.new(0, minimizedRadius)
             titleCorner.CornerRadius = UDim.new(0, minimizedRadius)
@@ -485,12 +475,10 @@ function Library:Destroy()
     if self.ScreenGui then self.ScreenGui:Destroy() end
 end
 
--- ── NewSection ────────────────────────────────────────────────────────────────
 
 function Library:NewSection(name)
     local section = {}
 
-    -- Sidebar tab button
     local tabBtn = Instance.new("TextButton")
     tabBtn.BackgroundColor3       = Color3.fromRGB(0,0,0)
     tabBtn.BackgroundTransparency = 1
@@ -506,7 +494,6 @@ function Library:NewSection(name)
     Corner(tabBtn, 7)
     self.TabYOffset = self.TabYOffset + 36
 
-    -- Active indicator bar on left edge of tab
     local indicator = Instance.new("Frame")
     indicator.BackgroundColor3     = Config.Theme.Accent
     indicator.BackgroundTransparency = 1
@@ -527,7 +514,6 @@ function Library:NewSection(name)
         end
     end)
 
-    -- Scrolling content
     local scroll = Instance.new("ScrollingFrame")
     scroll.BackgroundTransparency = 1
     scroll.Size                   = UDim2.new(1, 0, 1, 0)
@@ -573,9 +559,8 @@ function Library:NewSection(name)
 
     tabBtn.MouseButton1Click:Connect(activateTab)
 
-    if self.TabYOffset == 44 then activateTab() end  -- first tab auto-opens
+    if self.TabYOffset == 44 then activateTab() end
 
-    -- ── Row factory ──────────────────────────────────────────────────────────
     local function makeRow(h)
         local row = Instance.new("Frame")
         row.BackgroundColor3 = Config.Theme.Elevated
@@ -593,7 +578,6 @@ function Library:NewSection(name)
         return s
     end
 
-    -- ── Button ───────────────────────────────────────────────────────────────
     function section.NewButton(props)
         local row = makeRow(32)
         rowStroke(row)
@@ -604,7 +588,6 @@ function Library:NewSection(name)
         btn.Text          = ""
         btn.Parent        = row
 
-        -- Accent left stripe
         local stripe = Instance.new("Frame")
         stripe.BackgroundColor3     = Config.Theme.Accent
         stripe.BackgroundTransparency = 0.5
@@ -638,7 +621,6 @@ function Library:NewSection(name)
         return row
     end
 
-    -- ── Toggle ───────────────────────────────────────────────────────────────
     function section.NewToggle(props)
         local row   = makeRow(34)
         local state = false
@@ -646,7 +628,6 @@ function Library:NewSection(name)
 
         Label(row, { Text = props.Text or "Toggle", Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 12, 0, 0), FrameSize = UDim2.new(1, -80, 1, 0) })
 
-        -- Track
         local track = Instance.new("Frame")
         track.BackgroundColor3 = Config.Theme.Secondary
         track.BorderSizePixel  = 0
@@ -691,7 +672,6 @@ function Library:NewSection(name)
         return row
     end
 
-    -- ── Slider ───────────────────────────────────────────────────────────────
     function section.NewSlider(props)
         local row    = makeRow(44)
         local minVal = props.Min or 0
@@ -717,18 +697,17 @@ function Library:NewSection(name)
         fill.Parent           = track
         Corner(fill, 3)
 
-        -- Handle is a child of row so it's never clipped by the 6px track
         local handle = Instance.new("Frame")
         handle.BackgroundColor3 = Config.Theme.Text
         handle.BorderSizePixel  = 0
         handle.Size             = UDim2.new(0, 14, 0, 14)
         handle.AnchorPoint      = Vector2.new(0.5, 0.5)
-        handle.Position         = UDim2.new(0, 12, 0, 33) -- default: left edge of track, vertically centered
+        handle.Position         = UDim2.new(0, 12, 0, 33)
         handle.Parent           = row
         Corner(handle, 7)
         Stroke(handle, Config.Theme.Accent, 1)
 
-        local trackLeft = 12  -- matches track.Position X offset
+        local trackLeft = 12
         local currentValue = math.clamp(props.Value or minVal, minVal, maxVal)
 
         local function valueToRel(value)
@@ -757,11 +736,9 @@ function Library:NewSection(name)
             if props.Callback then props.Callback(currentValue) end
         end
 
-        -- Set initial position/value after a frame so AbsoluteSize is valid
         task.defer(syncSliderVisuals)
         track:GetPropertyChangedSignal("AbsoluteSize"):Connect(syncSliderVisuals)
 
-        -- Invisible hit area covering the track zone
         local hitArea = Instance.new("TextButton")
         hitArea.BackgroundTransparency = 1
         hitArea.Size     = UDim2.new(1, -24, 0, 20)
@@ -789,7 +766,6 @@ function Library:NewSection(name)
         return row
     end
 
-    -- ── Dropdown ─────────────────────────────────────────────────────────────
     function section.NewDropdown(props)
         local options    = props.Options or {}
         local itemH      = 30
@@ -807,12 +783,10 @@ function Library:NewSection(name)
         Corner(dd, 7)
         local ddStroke = Stroke(dd, Config.Theme.Edge, 1)
 
-        -- Header
         Label(dd, { Text = props.Text or "Dropdown", Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 12, 0, 0), FrameSize = UDim2.new(0.65, 0, 0, 32) })
         local valLbl = Label(dd, { Text = props.Default or "Select", Color = Config.Theme.TextDim, Size = 12, AlignX = Enum.TextXAlignment.Right, Pos = UDim2.new(0, 0, 0, 0), FrameSize = UDim2.new(1, -32, 0, 32) })
         local arrow  = Label(dd, { Text = "v", Color = Config.Theme.TextDim, Size = 11, AlignX = Enum.TextXAlignment.Center, Pos = UDim2.new(1, -26, 0, 0), FrameSize = UDim2.new(0, 22, 0, 32) })
 
-        -- Separator line
         local sep = Instance.new("Frame")
         sep.BackgroundColor3     = Config.Theme.Edge
         sep.BackgroundTransparency = 0
@@ -821,7 +795,6 @@ function Library:NewSection(name)
         sep.Position             = UDim2.new(0, 12, 0, 32)
         sep.Parent               = dd
 
-        -- List
         local list = Instance.new("Frame")
         list.BackgroundTransparency = 1
         list.BorderSizePixel        = 0
@@ -882,7 +855,6 @@ function Library:NewSection(name)
         return dd
     end
 
-    -- ── TextBox ──────────────────────────────────────────────────────────────
     function section.NewTextBox(props)
         local row = makeRow(32)
         local s   = rowStroke(row)
@@ -924,7 +896,6 @@ function Library:NewSection(name)
         return row
     end
 
-    -- ── Keybind ──────────────────────────────────────────────────────────────
     function section.NewKeybind(props)
         local row       = makeRow(32)
         local isBinding = false
@@ -979,8 +950,7 @@ function Library:NewSection(name)
         UserInputService.InputBegan:Connect(function(input, gp)
             
             if gp then return end
-            
-            -- Selecting a new key
+
             if isBinding and input.UserInputType == Enum.UserInputType.Keyboard then
                 isBinding = false
                 boundKey = input.KeyCode
@@ -1004,7 +974,6 @@ function Library:NewSection(name)
                 return
             end
 
-                -- Key was pressed normally
             if boundKey and input.KeyCode == boundKey then
                 if props.Callback then
                     props.Callback(boundKey)
