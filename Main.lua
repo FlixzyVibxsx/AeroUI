@@ -125,40 +125,44 @@ local ThemePresets = {
 local ThemeMap = {}
 local Pending  = {}
 
-local function Raw(inst) -- mark instances the theme system must ignore
+local function Raw(inst) -- marks instances the theme must never recolor (picker internals)
     inst:SetAttribute("NoTheme", true)
     return inst
 end
 
-local function trackInstance(inst)
-    if inst:GetAttribute("NoTheme") then return end
+-- every themed element remembers its role on the instance itself
+local function tagInstance(inst)
     local props = THEME_PROPS[inst.ClassName]
-    if not props then return end
+    if not props or inst:GetAttribute("NoTheme") then return end
     for _, prop in ipairs(props) do
-        local current = inst[prop]
-        for _, key in ipairs(THEME_KEYS) do
-            if Config.Theme[key] == current then
-                ThemeMap[inst] = ThemeMap[inst] or {}
-                ThemeMap[inst][prop] = key
-                break
+        local attr = "Theme_" .. prop
+        if inst:GetAttribute(attr) == nil then
+            local current = inst[prop]
+            for _, key in ipairs(THEME_KEYS) do
+                if Config.Theme[key] == current then
+                    inst:SetAttribute(attr, key)
+                    break
+                end
             end
         end
     end
 end
 
-local function flushPending()
-    for inst in next, Pending do
-        Pending[inst] = nil
-        trackInstance(inst)
+local function TrackTheme(root)
+    for _, d in ipairs(root:GetDescendants()) do tagInstance(d) end
+    root.DescendantAdded:Connect(tagInstance)
+end
+
+-- which theme key should this property follow?
+local function pickKey(inst, prop, old)
+    local current = inst[prop]
+    local role = inst:GetAttribute("Theme_" .. prop)
+    if role and old[role] == current then return role end   -- resting state
+    for _, key in ipairs(THEME_KEYS) do                      -- hover / toggled / active state
+        if old[key] == current then return key end
     end
+    return role                                              -- fallback: recorded role
 end
-
-local function Raw(inst)
-    inst:SetAttribute("NoTheme", true)
-    return inst
-end
-
-local function TrackTheme() end
 
 local function commit(gui, changes)
     local old = {}
@@ -172,23 +176,31 @@ local function commit(gui, changes)
         end
     end
 
-    if not gui then return end
+    if not gui then
+        warn("[AeroUI] theme: no ScreenGui to recolor")
+        return
+    end
 
+    local count, warned = 0, false
     for _, inst in ipairs(gui:GetDescendants()) do
         local props = THEME_PROPS[inst.ClassName]
         if props and not inst:GetAttribute("NoTheme") then
-            for _, prop in ipairs(props) do
-                local current = inst[prop]
-                for _, key in ipairs(THEME_KEYS) do
-                    if old[key] == current then
-                        local new = Config.Theme[key]
-                        if new ~= current then inst[prop] = new end
-                        break
+            local ok, err = pcall(function()
+                for _, prop in ipairs(props) do
+                    local key = pickKey(inst, prop, old)
+                    if key then
+                        inst[prop] = Config.Theme[key]
+                        count = count + 1
                     end
                 end
+            end)
+            if not ok and not warned then
+                warned = true
+                warn("[AeroUI] theme error: " .. tostring(err))
             end
         end
     end
+    if count == 0 then warn("[AeroUI] theme: nothing was recolored") end
 end
 
 function Library:SetTheme(key, color) commit(self.ScreenGui, { [key] = color }) end
@@ -197,33 +209,7 @@ function Library:ApplyPreset(name)    if ThemePresets[name] then commit(self.Scr
 function Library:ResetTheme()         commit(self.ScreenGui, DefaultTheme) end
 function Library:GetPresetNames()     return table.clone(PresetOrder) end
 
-local function commit(changes)
-    flushPending()
-    local old = {}
-    for k, v in next, Config.Theme do old[k] = v end
-
-    for key, color in next, changes do
-        if Config.Theme[key] ~= nil and typeof(color) == "Color3" then
-            Config.Theme[key] = color
-            if key == "Accent" then Config.Theme.CloseText = color
-            elseif key == "Primary" then Config.Theme.Close = color end
-        end
-    end
-
-    for inst, props in next, ThemeMap do
-        for prop, key in next, props do
-            if inst[prop] == old[key] then
-                inst[prop] = Config.Theme[key]
-            end
-        end
-    end
-end
-
-function Library:SetTheme(key, color)  commit({ [key] = color }) end
-function Library:GetTheme(key)         return Config.Theme[key] end
-function Library:ApplyPreset(name)     if ThemePresets[name] then commit(ThemePresets[name]) end end
-function Library:ResetTheme()          commit(DefaultTheme) end
-function Library:GetPresetNames()      return table.clone(PresetOrder) end
+print("[AeroUI] theme system v4 loaded") -- you can delete this once it works
 
 local NotifContainer
 local function GetNotifContainer()
