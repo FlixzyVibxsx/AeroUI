@@ -122,7 +122,7 @@ local ThemePresets = {
                  Text = Color3.fromRGB(255, 242, 248), TextDim = Color3.fromRGB(180, 145, 162) },
 }
 
-local ThemeMap = setmetatable({}, { __mode = "k" })
+local ThemeMap = {}
 local Pending  = {}
 
 local function Raw(inst) -- mark instances the theme system must ignore
@@ -160,6 +160,16 @@ local function TrackTheme(root)
         task.delay(0.35, function() -- wait for creation tweens to finish
             if Pending[d] then Pending[d] = nil; trackInstance(d) end
         end)
+    end)
+
+    root.DescendantRemoving:Connect(function(d)
+        Pending[d] = nil
+        ThemeMap[d] = nil
+    end)
+
+    root.Destroying:Connect(function()
+        table.clear(ThemeMap)
+        table.clear(Pending)
     end)
 end
 
