@@ -896,6 +896,13 @@ function Library:NewSection(name)
         return row
     end
 
+    funtion section.NewLabel(props)
+        local row = makeRow(32)
+        rowStroke(row)
+        Label(row, { Text = props.Text or "Label", Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 12, 0, 0), FrameSize = UDim2.new(1, -24, 1, 0) })
+        return row
+    end
+
     function section.NewKeybind(props)
         local row       = makeRow(32)
         local isBinding = false
