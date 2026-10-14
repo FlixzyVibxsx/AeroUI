@@ -918,6 +918,45 @@ function Library:NewSection(name)
         obj.Row = row
         return obj
     end
+    function section.NewParagraph(props)
+        -- accepts a string, or a table of lines
+        if type(props) == "string" then
+            props = { Text = props }
+        elseif type(props) == "table" and props.Text == nil then
+            props = { Text = table.concat(props, "\n") }
+        end
+        props = props or {}
+
+        local row = makeRow(0)
+        row.AutomaticSize = Enum.AutomaticSize.Y
+        row.Size = UDim2.new(1, 0, 0, 0)
+        Stroke(row, Config.Theme.Edge, 1) -- static border, no hover glow
+
+        local pad = Instance.new("UIPadding")
+        pad.PaddingTop    = UDim.new(0, 8)
+        pad.PaddingBottom = UDim.new(0, 8)
+        pad.PaddingLeft   = UDim.new(0, 12)
+        pad.PaddingRight  = UDim.new(0, 12)
+        pad.Parent = row
+
+        local lbl = Instance.new("TextLabel")
+        lbl.BackgroundTransparency = 1
+        lbl.AutomaticSize    = Enum.AutomaticSize.Y
+        lbl.Size             = UDim2.new(1, 0, 0, 0)
+        lbl.Text             = props.Text or ""
+        lbl.TextColor3       = props.Color or Config.Theme.Text
+        lbl.TextSize         = 13
+        lbl.Font             = Enum.Font.GothamMedium
+        lbl.LineHeight       = 1.3
+        lbl.TextWrapped      = true
+        lbl.TextXAlignment   = Enum.TextXAlignment.Left
+        lbl.TextYAlignment   = Enum.TextYAlignment.Top
+        lbl.Parent           = row
+
+        local obj = { Row = row }
+        function obj.SetText(text) lbl.Text = text end
+        return obj
+    end
 
     function section.NewKeybind(props)
         local row       = makeRow(32)
