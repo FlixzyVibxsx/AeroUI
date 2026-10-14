@@ -125,7 +125,13 @@ local ThemePresets = {
 local ThemeMap = setmetatable({}, { __mode = "k" })
 local Pending  = {}
 
+local function Raw(inst) -- mark instances the theme system must ignore
+    inst:SetAttribute("NoTheme", true)
+    return inst
+end
+
 local function trackInstance(inst)
+    if inst:GetAttribute("NoTheme") then return end
     local props = THEME_PROPS[inst.ClassName]
     if not props then return end
     for _, prop in ipairs(props) do
@@ -1149,6 +1155,254 @@ function Library:NewSection(name)
             end
         end)
     return row
+    end
+
+    function section.NewColorPicker(props)
+        props = props or {}
+        local color = props.Default or Config.Theme.Accent
+        local h, s, v = color:ToHSV()
+
+        local row = makeRow(184)
+        Stroke(row, Config.Theme.Edge, 1)
+
+        Label(row, { Text = props.Text or "Color", Size = 13, Pos = UDim2.new(0, 12, 0, 4), FrameSize = UDim2.new(0.6, 0, 0, 18) })
+
+        -- preview swatch
+        local swatch = Raw(Instance.new("Frame"))
+        swatch.BorderSizePixel  = 0
+        swatch.BackgroundColor3 = color
+        swatch.Size             = UDim2.new(0, 40, 0, 16)
+        swatch.Position         = UDim2.new(1, -52, 0, 5)
+        swatch.Parent           = row
+        Corner(swatch, 4)
+        Stroke(swatch, Config.Theme.Edge, 1)
+
+        -- saturation / brightness square
+        local sv = Raw(Instance.new("Frame"))
+        sv.BorderSizePixel  = 0
+        sv.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+        sv.Size             = UDim2.new(1, -52, 0, 100)
+        sv.Position         = UDim2.new(0, 12, 0, 28)
+        sv.Parent           = row
+        Corner(sv, 5)
+
+        local white = Raw(Instance.new("Frame"))
+        white.BorderSizePixel  = 0
+        white.BackgroundColor3 = Color3.new(1, 1, 1)
+        white.Size             = UDim2.new(1, 0, 1, 0)
+        white.Parent           = sv
+        Corner(white, 5)
+        local wg = Instance.new("UIGradient")
+        wg.Transparency = NumberSequence.new(0, 1)      -- left: opaque white -> right: clear
+        wg.Parent = white
+
+        local black = Raw(Instance.new("Frame"))
+        black.BorderSizePixel  = 0
+        black.BackgroundColor3 = Color3.new(0, 0, 0)
+        black.Size             = UDim2.new(1, 0, 1, 0)
+        black.Parent           = sv
+        Corner(black, 5)
+        local bg = Instance.new("UIGradient")
+        bg.Rotation     = 90
+        bg.Transparency = NumberSequence.new(1, 0)      -- top: clear -> bottom: opaque black
+        bg.Parent = black
+
+        local svCur = Instance.new("Frame")
+        svCur.BackgroundTransparency = 1
+        svCur.Size        = UDim2.new(0, 10, 0, 10)
+        svCur.AnchorPoint = Vector2.new(0.5, 0.5)
+        svCur.ZIndex      = 3
+        svCur.Parent      = sv
+        Corner(svCur, 5)
+        Raw(Stroke(svCur, Color3.new(1, 1, 1), 2))
+
+        local svHit = Instance.new("Frame")
+        svHit.BackgroundTransparency = 1
+        svHit.Size   = UDim2.new(1, 0, 1, 0)
+        svHit.ZIndex = 4
+        svHit.Active = true
+        svHit.Parent = sv
+
+        -- hue bar
+        local hue = Raw(Instance.new("Frame"))
+        hue.BorderSizePixel  = 0
+        hue.BackgroundColor3 = Color3.new(1, 1, 1)
+        hue.Size             = UDim2.new(0, 18, 0, 100)
+        hue.Position         = UDim2.new(1, -30, 0, 28)
+        hue.Parent           = row
+        Corner(hue, 5)
+        local hg = Instance.new("UIGradient")
+        hg.Rotation = 90
+        local keys = {}
+        for i = 0, 6 do
+            keys[#keys + 1] = ColorSequenceKeypoint.new(i / 6, Color3.fromHSV((i / 6) % 1, 1, 1))
+        end
+        hg.Color = ColorSequence.new(keys)
+        hg.Parent = hue
+
+        local hueCur = Instance.new("Frame")
+        hueCur.BackgroundTransparency = 1
+        hueCur.Size        = UDim2.new(1, 4, 0, 6)
+        hueCur.AnchorPoint = Vector2.new(0.5, 0.5)
+        hueCur.ZIndex      = 3
+        hueCur.Parent      = hue
+        Corner(hueCur, 3)
+        Raw(Stroke(hueCur, Color3.new(1, 1, 1), 2))
+
+        local hueHit = Instance.new("Frame")
+        hueHit.BackgroundTransparency = 1
+        hueHit.Size   = UDim2.new(1, 0, 1, 0)
+        hueHit.ZIndex = 4
+        hueHit.Active = true
+        hueHit.Parent = hue
+
+        -- R / G / B / HEX boxes
+        local boxes = Instance.new("Frame")
+        boxes.BackgroundTransparency = 1
+        boxes.Size     = UDim2.new(1, -18, 0, 22)
+        boxes.Position = UDim2.new(0, 12, 0, 136)
+        boxes.Parent   = row
+
+        local caps = Instance.new("Frame")
+        caps.BackgroundTransparency = 1
+        caps.Size     = UDim2.new(1, -18, 0, 14)
+        caps.Position = UDim2.new(0, 12, 0, 160)
+        caps.Parent   = row
+
+        local function makeBox(xScale, wScale, caption)
+            local bgf = Instance.new("Frame")
+            bgf.BackgroundColor3 = Config.Theme.Secondary
+            bgf.BorderSizePixel  = 0
+            bgf.Size             = UDim2.new(wScale, -6, 1, 0)
+            bgf.Position         = UDim2.new(xScale, 0, 0, 0)
+            bgf.Parent           = boxes
+            Corner(bgf, 5)
+            local st = Stroke(bgf, Config.Theme.Edge, 1)
+
+            local tb = Instance.new("TextBox")
+            tb.BackgroundTransparency = 1
+            tb.Size             = UDim2.new(1, -8, 1, 0)
+            tb.Position         = UDim2.new(0, 4, 0, 0)
+            tb.TextColor3       = Config.Theme.Text
+            tb.TextSize         = 12
+            tb.Font             = Enum.Font.Gotham
+            tb.ClearTextOnFocus = false
+            tb.Text             = ""
+            tb.Parent           = bgf
+
+            tb.Focused:Connect(function() Tween(st, TI_FAST, { Color = Config.Theme.Accent }) end)
+            tb.FocusLost:Connect(function() Tween(st, TI_FAST, { Color = Config.Theme.Edge }) end)
+
+            Label(caps, { Text = caption, Color = Config.Theme.TextDim, Size = 10, AlignX = Enum.TextXAlignment.Center,
+                          Pos = UDim2.new(xScale, 0, 0, 0), FrameSize = UDim2.new(wScale, -6, 1, 0) })
+            return tb
+        end
+
+        local boxR = makeBox(0,   0.2, "R")
+        local boxG = makeBox(0.2, 0.2, "G")
+        local boxB = makeBox(0.4, 0.2, "B")
+        local boxH = makeBox(0.6, 0.4, "HEX")
+
+        -- state / rendering
+        local function render()
+            sv.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+            svCur.Position      = UDim2.new(s, 0, 1 - v, 0)
+            hueCur.Position     = UDim2.new(0.5, 0, h, 0)
+            swatch.BackgroundColor3 = color
+            local r = math.floor(color.R * 255 + 0.5)
+            local g = math.floor(color.G * 255 + 0.5)
+            local b = math.floor(color.B * 255 + 0.5)
+            boxR.Text = tostring(r)
+            boxG.Text = tostring(g)
+            boxB.Text = tostring(b)
+            boxH.Text = string.format("#%02X%02X%02X", r, g, b)
+        end
+
+        local function emit()
+            if props.Callback then props.Callback(color) end
+        end
+
+        local function fromHSVState()
+            color = Color3.fromHSV(h, s, v)
+            render()
+            emit()
+        end
+
+        local function fromColor(c, shouldEmit)
+            color = c
+            local nh, ns, nv = c:ToHSV()
+            if ns > 0 and nv > 0 then h = nh end -- keep hue when the color is grey/black
+            s, v = ns, nv
+            render()
+            if shouldEmit then emit() end
+        end
+
+        -- dragging
+        local dragMode = nil
+        local function updateSV(pos)
+            local ap, as = sv.AbsolutePosition, sv.AbsoluteSize
+            if as.X == 0 or as.Y == 0 then return end
+            s = math.clamp((pos.X - ap.X) / as.X, 0, 1)
+            v = 1 - math.clamp((pos.Y - ap.Y) / as.Y, 0, 1)
+            fromHSVState()
+        end
+        local function updateHue(pos)
+            local ap, as = hue.AbsolutePosition, hue.AbsoluteSize
+            if as.Y == 0 then return end
+            h = math.clamp((pos.Y - ap.Y) / as.Y, 0, 0.999)
+            fromHSVState()
+        end
+        local function isPress(i)
+            return i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch
+        end
+
+        svHit.InputBegan:Connect(function(i)
+            if isPress(i) then dragMode = "sv"; updateSV(i.Position) end
+        end)
+        hueHit.InputBegan:Connect(function(i)
+            if isPress(i) then dragMode = "hue"; updateHue(i.Position) end
+        end)
+        UserInputService.InputChanged:Connect(function(i)
+            if not dragMode then return end
+            if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
+                if dragMode == "sv" then updateSV(i.Position) else updateHue(i.Position) end
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(i)
+            if isPress(i) then dragMode = nil end
+        end)
+
+        -- typed input
+        local function channel(tb, current)
+            local n = tonumber(tb.Text)
+            if n then return math.clamp(math.floor(n + 0.5), 0, 255) end
+            return math.floor(current * 255 + 0.5)
+        end
+        local function commitRGB()
+            fromColor(Color3.fromRGB(channel(boxR, color.R), channel(boxG, color.G), channel(boxB, color.B)), true)
+        end
+        boxR.FocusLost:Connect(commitRGB)
+        boxG.FocusLost:Connect(commitRGB)
+        boxB.FocusLost:Connect(commitRGB)
+        boxH.FocusLost:Connect(function()
+            local hex = string.gsub(boxH.Text, "[#%s]", "")
+            if hex:match("^%x%x%x%x%x%x$") then
+                fromColor(Color3.fromRGB(
+                    tonumber(hex:sub(1, 2), 16),
+                    tonumber(hex:sub(3, 4), 16),
+                    tonumber(hex:sub(5, 6), 16)
+                ), true)
+            else
+                render() -- invalid hex: restore the previous value
+            end
+        end)
+
+        render()
+
+        local obj = { Row = row }
+        function obj.SetColor(c) fromColor(c, false) end  -- no callback, safe to call from code
+        function obj.GetColor() return color end
+        return obj
     end
 
     return section
