@@ -99,7 +99,7 @@ local THEME_PROPS = {
     UIStroke       = { "Color" },
 }
 
-local PresetOrder = { "Default", "Crimson", "Ocean", "Emerald", "Sunset", "Midnight" }
+local PresetOrder = { "Default", "Crimson", "Ocean", "Emerald", "Sunset", "Midnight", "CoastalPink" }
 local ThemePresets = {
     Default  = DefaultTheme,
     Crimson  = { Primary = Color3.fromRGB(36, 26, 28), Secondary = Color3.fromRGB(26, 18, 20), Elevated = Color3.fromRGB(52, 36, 40),
@@ -117,6 +117,9 @@ local ThemePresets = {
     Midnight = { Primary = Color3.fromRGB(18, 18, 18), Secondary = Color3.fromRGB(10, 10, 10), Elevated = Color3.fromRGB(32, 32, 32),
                  Accent = Color3.fromRGB(230, 230, 230), AccentHover = Color3.fromRGB(255, 255, 255), Edge = Color3.fromRGB(70, 70, 70),
                  Text = Color3.fromRGB(245, 245, 245), TextDim = Color3.fromRGB(140, 140, 140) },
+    CoastalPink = { Primary = Color3.fromRGB(40, 28, 34), Secondary = Color3.fromRGB(30, 20, 26), Elevated = Color3.fromRGB(58, 40, 50),
+                 Accent = Color3.fromRGB(255, 128, 176), AccentHover = Color3.fromRGB(255, 170, 205), Edge = Color3.fromRGB(135, 80, 105),
+                 Text = Color3.fromRGB(255, 242, 248), TextDim = Color3.fromRGB(180, 145, 162) },
 }
 
 local ThemeMap = setmetatable({}, { __mode = "k" })
