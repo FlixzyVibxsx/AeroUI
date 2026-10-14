@@ -153,25 +153,49 @@ local function flushPending()
     end
 end
 
-local function TrackTheme(root)
-    root.DescendantAdded:Connect(function(d)
-        if not THEME_PROPS[d.ClassName] then return end
-        Pending[d] = true
-        task.delay(0.35, function() -- wait for creation tweens to finish
-            if Pending[d] then Pending[d] = nil; trackInstance(d) end
-        end)
-    end)
-
-    root.DescendantRemoving:Connect(function(d)
-        Pending[d] = nil
-        ThemeMap[d] = nil
-    end)
-
-    root.Destroying:Connect(function()
-        table.clear(ThemeMap)
-        table.clear(Pending)
-    end)
+local function Raw(inst)
+    inst:SetAttribute("NoTheme", true)
+    return inst
 end
+
+local function TrackTheme() end
+
+local function commit(gui, changes)
+    local old = {}
+    for k, v in next, Config.Theme do old[k] = v end
+
+    for key, color in next, changes do
+        if Config.Theme[key] ~= nil and typeof(color) == "Color3" then
+            Config.Theme[key] = color
+            if key == "Accent" then Config.Theme.CloseText = color
+            elseif key == "Primary" then Config.Theme.Close = color end
+        end
+    end
+
+    if not gui then return end
+
+    for _, inst in ipairs(gui:GetDescendants()) do
+        local props = THEME_PROPS[inst.ClassName]
+        if props and not inst:GetAttribute("NoTheme") then
+            for _, prop in ipairs(props) do
+                local current = inst[prop]
+                for _, key in ipairs(THEME_KEYS) do
+                    if old[key] == current then
+                        local new = Config.Theme[key]
+                        if new ~= current then inst[prop] = new end
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
+
+function Library:SetTheme(key, color) commit(self.ScreenGui, { [key] = color }) end
+function Library:GetTheme(key)        return Config.Theme[key] end
+function Library:ApplyPreset(name)    if ThemePresets[name] then commit(self.ScreenGui, ThemePresets[name]) end end
+function Library:ResetTheme()         commit(self.ScreenGui, DefaultTheme) end
+function Library:GetPresetNames()     return table.clone(PresetOrder) end
 
 local function commit(changes)
     flushPending()
