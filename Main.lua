@@ -85,6 +85,103 @@ local function HoverGlow(frame, stroke)
     end)
 end
 
+local THEME_KEYS = { "Primary", "Secondary", "Elevated", "Accent", "AccentHover", "Edge", "Text", "TextDim", "Success", "Error" }
+
+local DefaultTheme = {}
+for k, v in next, Config.Theme do DefaultTheme[k] = v end
+
+local THEME_PROPS = {
+    Frame          = { "BackgroundColor3" },
+    TextLabel      = { "BackgroundColor3", "TextColor3" },
+    TextButton     = { "BackgroundColor3", "TextColor3" },
+    TextBox        = { "BackgroundColor3", "TextColor3", "PlaceholderColor3" },
+    ScrollingFrame = { "BackgroundColor3", "ScrollBarImageColor3" },
+    UIStroke       = { "Color" },
+}
+
+local PresetOrder = { "Default", "Crimson", "Ocean", "Emerald", "Sunset", "Midnight" }
+local ThemePresets = {
+    Default  = DefaultTheme,
+    Crimson  = { Primary = Color3.fromRGB(36, 26, 28), Secondary = Color3.fromRGB(26, 18, 20), Elevated = Color3.fromRGB(52, 36, 40),
+                 Accent = Color3.fromRGB(255, 70, 85), AccentHover = Color3.fromRGB(255, 115, 125), Edge = Color3.fromRGB(120, 60, 68),
+                 Text = Color3.fromRGB(255, 240, 242), TextDim = Color3.fromRGB(170, 140, 146) },
+    Ocean    = { Primary = Color3.fromRGB(22, 30, 40), Secondary = Color3.fromRGB(15, 22, 30), Elevated = Color3.fromRGB(30, 42, 56),
+                 Accent = Color3.fromRGB(50, 170, 255), AccentHover = Color3.fromRGB(110, 200, 255), Edge = Color3.fromRGB(50, 90, 125),
+                 Text = Color3.fromRGB(235, 245, 255), TextDim = Color3.fromRGB(130, 150, 170) },
+    Emerald  = { Primary = Color3.fromRGB(22, 34, 28), Secondary = Color3.fromRGB(15, 25, 20), Elevated = Color3.fromRGB(30, 48, 38),
+                 Accent = Color3.fromRGB(50, 215, 130), AccentHover = Color3.fromRGB(110, 240, 175), Edge = Color3.fromRGB(50, 110, 80),
+                 Text = Color3.fromRGB(236, 255, 244), TextDim = Color3.fromRGB(130, 165, 145) },
+    Sunset   = { Primary = Color3.fromRGB(38, 28, 24), Secondary = Color3.fromRGB(28, 20, 17), Elevated = Color3.fromRGB(54, 40, 34),
+                 Accent = Color3.fromRGB(255, 150, 50), AccentHover = Color3.fromRGB(255, 185, 110), Edge = Color3.fromRGB(125, 85, 55),
+                 Text = Color3.fromRGB(255, 246, 236), TextDim = Color3.fromRGB(175, 150, 130) },
+    Midnight = { Primary = Color3.fromRGB(18, 18, 18), Secondary = Color3.fromRGB(10, 10, 10), Elevated = Color3.fromRGB(32, 32, 32),
+                 Accent = Color3.fromRGB(230, 230, 230), AccentHover = Color3.fromRGB(255, 255, 255), Edge = Color3.fromRGB(70, 70, 70),
+                 Text = Color3.fromRGB(245, 245, 245), TextDim = Color3.fromRGB(140, 140, 140) },
+}
+
+local ThemeMap = setmetatable({}, { __mode = "k" })
+local Pending  = {}
+
+local function trackInstance(inst)
+    local props = THEME_PROPS[inst.ClassName]
+    if not props then return end
+    for _, prop in ipairs(props) do
+        local current = inst[prop]
+        for _, key in ipairs(THEME_KEYS) do
+            if Config.Theme[key] == current then
+                ThemeMap[inst] = ThemeMap[inst] or {}
+                ThemeMap[inst][prop] = key
+                break
+            end
+        end
+    end
+end
+
+local function flushPending()
+    for inst in next, Pending do
+        Pending[inst] = nil
+        trackInstance(inst)
+    end
+end
+
+local function TrackTheme(root)
+    root.DescendantAdded:Connect(function(d)
+        if not THEME_PROPS[d.ClassName] then return end
+        Pending[d] = true
+        task.delay(0.35, function() -- wait for creation tweens to finish
+            if Pending[d] then Pending[d] = nil; trackInstance(d) end
+        end)
+    end)
+end
+
+local function commit(changes)
+    flushPending()
+    local old = {}
+    for k, v in next, Config.Theme do old[k] = v end
+
+    for key, color in next, changes do
+        if Config.Theme[key] ~= nil and typeof(color) == "Color3" then
+            Config.Theme[key] = color
+            if key == "Accent" then Config.Theme.CloseText = color
+            elseif key == "Primary" then Config.Theme.Close = color end
+        end
+    end
+
+    for inst, props in next, ThemeMap do
+        for prop, key in next, props do
+            if inst[prop] == old[key] then
+                inst[prop] = Config.Theme[key]
+            end
+        end
+    end
+end
+
+function Library:SetTheme(key, color)  commit({ [key] = color }) end
+function Library:GetTheme(key)         return Config.Theme[key] end
+function Library:ApplyPreset(name)     if ThemePresets[name] then commit(ThemePresets[name]) end end
+function Library:ResetTheme()          commit(DefaultTheme) end
+function Library:GetPresetNames()      return table.clone(PresetOrder) end
+
 local NotifContainer
 local function GetNotifContainer()
     if NotifContainer then return NotifContainer end
@@ -136,6 +233,7 @@ function Library.new()
     self.ScreenGui.ResetOnSpawn   = false
     self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent         = PARENT
+    TrackTheme(self.ScreenGui)
 
     local glowRing = Instance.new("Frame")
     glowRing.BackgroundTransparency = 1
@@ -763,7 +861,12 @@ function Library:NewSection(name)
                 update(i.Position.X)
             end
         end)
-        return row
+        local obj = { Row = row }
+        function obj.SetValue(v)
+            currentValue = math.clamp(math.floor(v), minVal, maxVal)
+            syncSliderVisuals()
+        end
+        return obj
     end
 
     function section.NewDropdown(props)
