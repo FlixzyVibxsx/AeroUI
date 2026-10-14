@@ -25,7 +25,7 @@ local Config = {
         CloseText  = Color3.fromRGB(110, 100, 255),
     },
     Size  = UDim2.new(0, 380, 0, 480),
-    Title = "Aero UI",
+    Title = "Aero UI Library | I love my girlfriend <3",
 }
 
 local TI_FAST   = TweenInfo.new(0.18, Enum.EasingStyle.Quint)
