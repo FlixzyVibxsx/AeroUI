@@ -125,12 +125,11 @@ local ThemePresets = {
 local ThemeMap = {}
 local Pending  = {}
 
-local function Raw(inst) -- marks instances the theme must never recolor (picker internals)
+local function Raw(inst)
     inst:SetAttribute("NoTheme", true)
     return inst
 end
 
--- every themed element remembers its role on the instance itself
 local function tagInstance(inst)
     local props = THEME_PROPS[inst.ClassName]
     if not props or inst:GetAttribute("NoTheme") then return end
@@ -153,15 +152,14 @@ local function TrackTheme(root)
     root.DescendantAdded:Connect(tagInstance)
 end
 
--- which theme key should this property follow?
 local function pickKey(inst, prop, old)
     local current = inst[prop]
     local role = inst:GetAttribute("Theme_" .. prop)
-    if role and old[role] == current then return role end   -- resting state
-    for _, key in ipairs(THEME_KEYS) do                      -- hover / toggled / active state
+    if role and old[role] == current then return role end   
+    for _, key in ipairs(THEME_KEYS) do                      
         if old[key] == current then return key end
     end
-    return role                                              -- fallback: recorded role
+    return role                                              
 end
 
 local function commit(gui, changes)
@@ -208,8 +206,6 @@ function Library:GetTheme(key)        return Config.Theme[key] end
 function Library:ApplyPreset(name)    if ThemePresets[name] then commit(self.ScreenGui, ThemePresets[name]) end end
 function Library:ResetTheme()         commit(self.ScreenGui, DefaultTheme) end
 function Library:GetPresetNames()     return table.clone(PresetOrder) end
-
-print("[AeroUI] theme system v4 loaded") -- you can delete this once it works
 
 local NotifContainer
 local function GetNotifContainer()
