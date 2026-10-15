@@ -175,9 +175,9 @@ Section.NewDropdown({
 	"DragonWingRDew", "LeftWingStart", "RightWingStart", "DragonHornBig1", "DragonHornBig2", "DragonHornSmall1-1", "DragonHornSmall1-2",
 	"DragonHornSmall2-1", "DragonHornSmall2-2", "DragonSpike1", "DragonSpike2", "DragonSpike3", "DragonSpike4", "DragonSpike5", 
 	"DragonSpike6", "DragonSpike7", "DragonSpike8", "DragonSpike9", "DragonSpike10", "DragonHornTop1", "DragonHornTop2", "DragonHornTop3",
-	"DragonTip", "LeftWingStart", "LeftWing2", "LeftWing3", "RightWingStart", "RightWing2", "RightWing3" "Ocean1Primary", "Ocean1Secondary"
+	"DragonTip", "LeftWingStart", "LeftWing2", "LeftWing3", "RightWingStart", "RightWing2", "RightWing3", "Ocean1Primary", "Ocean1Secondary",
 	"Ocean2Primary", "Ocean2Secondary", "OceanTailPrimary", "OceanTailSecondary", "OceanDot1", "OceanDot2", "OceanDot3", "OceanDot4", 
-	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3"},
+	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3",},
 	Callback = function(option)
 		UI:Notify("Part Selected", "You selected: " .. option, 2)
 		Part = option
