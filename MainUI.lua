@@ -43,6 +43,13 @@ Section.NewButton({
 	end
 })
 
+Section.NewButton({
+	Text = "Drop Kick",
+	Callback = function()
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/platinww/CrustyMain/refs/heads/main/universal/DropKick.lua"))()
+	end
+})
+
 local Section = UI:NewSection("Customization")
 
 local chosenColor = Color3.fromRGB(0, 0, 0)
