@@ -210,7 +210,7 @@ Section.NewButton({
 		Event:FireServer(
     		"Color",
     		Value,
-			"Peircing",
+			"Piercing",
     		chosenColor,
     		{
     		    Material = "Concrete",
