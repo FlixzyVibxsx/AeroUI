@@ -188,7 +188,18 @@ Section.NewButton({
 		Event:FireServer(
     		"Color",
     		Value,
-			"Color1" and "MeshPart",
+			"Color1",
+    		chosenColor,
+    		{
+    		    Material = "Concrete",
+    		    MaterialVariant = ""
+    		}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events["ColorAccessory"]
+		Event:FireServer(
+    		"Color",
+    		Value,
+			"MeshPart",
     		chosenColor,
     		{
     		    Material = "Concrete",
