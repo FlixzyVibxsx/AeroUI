@@ -5,7 +5,7 @@
 
 	Free open source
 
-	Version Number: 0.9.6
+	Version Number: 1.0.0
 ]]--
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/FlixzyVibxsx/AeroUI/refs/heads/main/Lib.lua"))()
@@ -20,7 +20,7 @@ Section.NewParagraph({
     "Made by rFlixzypoo",
     "Assets from q_ow2",
     "Free and Open Source",
-    "Version: 0.9.5",
+    "Version: 1.0.0",
     "Flixz is a simp for his girlfriend <3",
 })
 
