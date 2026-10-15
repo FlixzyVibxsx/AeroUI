@@ -206,6 +206,17 @@ Section.NewButton({
     		    MaterialVariant = ""
     		}
 		)
+		local Event = game:GetService("ReplicatedStorage").Events["ColorAccessory"]
+		Event:FireServer(
+    		"Color",
+    		Value,
+			"Peircing",
+    		chosenColor,
+    		{
+    		    Material = "Concrete",
+    		    MaterialVariant = ""
+    		}
+		)
 	end
 })
 
