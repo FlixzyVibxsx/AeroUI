@@ -5,7 +5,7 @@
 
 	Free open source
 
-	Version Number: 0.9.5
+	Version Number: 0.9.6
 ]]--
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/FlixzyVibxsx/AeroUI/refs/heads/main/Lib.lua"))()
