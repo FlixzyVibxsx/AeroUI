@@ -5,7 +5,7 @@
 
 	Free open source
 
-	Version Number: 1.0.0
+	Version Number: 1.0.5
 ]]--
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/FlixzyVibxsx/AeroUI/refs/heads/main/Lib.lua"))()
@@ -20,7 +20,7 @@ Section.NewParagraph({
     "Made by rFlixzypoo",
     "Assets from q_ow2",
     "Free and Open Source",
-    "Version: 1.0.0",
+    "Version: 1.0.5",
     "Flixz is a simp for his girlfriend <3",
 })
 
@@ -59,6 +59,8 @@ local Part = "EyeColor1"
 
 Section.NewDropdown({
 	Text = "Select Accessory",
+	Searchable = true,
+	MaxHeight = 200,
 	Default = "Slider Bracelets",
 	Options = {"Slider Bracelets", "Cross Bracelets", "Leaves", "Winter Boots", "Double Bracelets", "Curly", "Punk",
 	"Lonely Woof", "Swiped Back", "Braided", "Long", "Ewooftional", "Long Straight", "Bed Head", "Short Spiky", "Long Spiky", 
@@ -162,6 +164,8 @@ Section.NewDropdown({
 
 Section.NewDropdown({
 	Text = "Part to Color",
+	Searchable = true,
+	MaxHeight = 200,
 	Default = "EyeColor1",
 	Options = {"EyeColor1", "EyeColor2", "Pupil1", "Pupil2", "White1", "White2", "Lash1", "Lash2", "Head", "Cheeks", "Muzzle",
 	"Eyebrow1", "Eyebrow2", "EyeLid", "Nose", "Jaw", "Gum", "Toungue1", "Toungue2", "NeckSecondary", "Torso", "TorsoSecondary",
@@ -186,6 +190,8 @@ Section.NewDropdown({
 
 Section.NewDropdown({
 	Text = "Select Material",
+	Searchable = true,
+	MaxHeight = 200,
 	Default = "Neon",
 	Options = {"ForceField", "Plastic", "Neon", "Wood", "Slate", "Concrete", "Granite", "Brick", "Pebble", "CorrodedMetal", 
 	"DiamondPlate", "Foil", "Grass", "Ice", "Marble", "Metal", "Rock", "Sand", "SmoothPlastic", "Snow", 
@@ -314,6 +320,8 @@ end
 
 Section.NewDropdown({
     Text = "Theme Preset",
+	Searchable = true,
+	MaxHeight = 200,
     Default = "Default",
     Options = UI:GetPresetNames(),
     Callback = function(name)
@@ -324,6 +332,8 @@ Section.NewDropdown({
 
 Section.NewDropdown({
     Text = "Customize",
+	Searchable = true,
+	MaxHeight = 200,
     Default = "Accent",
     Options = targetNames,
     Callback = function(name)
