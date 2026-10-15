@@ -877,6 +877,7 @@ function Library:NewSection(name)
         local itemH    = 30
         local headerH  = 32
         local maxListH = props.MaxHeight or 150
+        local multi    = props.Multi == true
         local isOpen   = false
 
         local options, seen = {}, {}
@@ -890,7 +891,36 @@ function Library:NewSection(name)
         local searchable = props.Searchable
         if searchable == nil then searchable = #options > 8 end
 
-        local listTop      = headerH + 1 + (searchable and 32 or 0)
+        local selected = {}
+        if multi then
+            local d = props.Default
+            if type(d) == "string" then d = { d } end
+            for _, opt in ipairs(d or {}) do
+                if seen[opt] then selected[opt] = true end
+            end
+        end
+
+        local function getSelected()
+            local out = {}
+            for _, opt in ipairs(options) do
+                if selected[opt] then table.insert(out, opt) end
+            end
+            return out
+        end
+
+        local function summary()
+            if not multi then return props.Default or "Select" end
+            local picked = getSelected()
+            if #picked == 0 then return "None" end
+            if #picked == 1 then return picked[1] end
+            return #picked .. " selected"
+        end
+
+        local y = headerH + 1
+        local searchY, btnY
+        if searchable then searchY = y + 5; y = y + 32 end
+        if multi      then btnY    = y + 3; y = y + 28 end
+        local listTop      = y
         local visibleCount = #options
 
         local function listHeight()
@@ -912,7 +942,7 @@ function Library:NewSection(name)
         local ddStroke = Stroke(dd, Config.Theme.Edge, 1)
 
         Label(dd, { Text = props.Text or "Dropdown", Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 12, 0, 0), FrameSize = UDim2.new(0.65, 0, 0, 32) })
-        local valLbl = Label(dd, { Text = props.Default or "Select", Color = Config.Theme.TextDim, Size = 12, AlignX = Enum.TextXAlignment.Right, Pos = UDim2.new(0, 0, 0, 0), FrameSize = UDim2.new(1, -32, 0, 32) })
+        local valLbl = Label(dd, { Text = summary(), Color = Config.Theme.TextDim, Size = 12, AlignX = Enum.TextXAlignment.Right, Pos = UDim2.new(0, 0, 0, 0), FrameSize = UDim2.new(1, -32, 0, 32) })
         local arrow  = Label(dd, { Text = "v", Color = Config.Theme.TextDim, Size = 11, AlignX = Enum.TextXAlignment.Center, Pos = UDim2.new(1, -26, 0, 0), FrameSize = UDim2.new(0, 22, 0, 32) })
 
         local sep = Instance.new("Frame")
@@ -928,7 +958,7 @@ function Library:NewSection(name)
             sbBg.BackgroundColor3 = Config.Theme.Secondary
             sbBg.BorderSizePixel  = 0
             sbBg.Size             = UDim2.new(1, -16, 0, 24)
-            sbBg.Position         = UDim2.new(0, 8, 0, headerH + 6)
+            sbBg.Position         = UDim2.new(0, 8, 0, searchY)
             sbBg.Parent           = dd
             Corner(sbBg, 5)
             local sbStroke = Stroke(sbBg, Config.Theme.Edge, 1)
@@ -978,6 +1008,24 @@ function Library:NewSection(name)
 
         local items = {}
 
+        local function paint(item)
+            local on = selected[item.opt] == true
+            if item.box then
+                Tween(item.box, TI_FAST, { BackgroundColor3 = on and Config.Theme.Accent or Config.Theme.Secondary })
+            end
+            Tween(item.btn, TI_FAST, { TextColor3 = on and Config.Theme.Text or Config.Theme.TextDim })
+        end
+
+        local function fire()
+            if props.Callback then
+                if multi then props.Callback(getSelected()) end
+            end
+        end
+
+        local function refreshHeader()
+            valLbl.Text = summary()
+        end
+
         local function applyFilter()
             local q = searchBox and string.lower((searchBox.Text:gsub("^%s+", ""):gsub("%s+$", ""))) or ""
             visibleCount = 0
@@ -1012,6 +1060,45 @@ function Library:NewSection(name)
             })
         end
 
+        if multi then
+            local function smallButton(text, xScale, xOff, onClick)
+                local b = Instance.new("TextButton")
+                b.BackgroundColor3 = Config.Theme.Secondary
+                b.BorderSizePixel  = 0
+                b.Size             = UDim2.new(0.5, -12, 0, 22)
+                b.Position         = UDim2.new(xScale, xOff, 0, btnY)
+                b.Text             = text
+                b.TextColor3       = Config.Theme.TextDim
+                b.TextSize         = 11
+                b.Font             = Enum.Font.GothamMedium
+                b.Parent           = dd
+                Corner(b, 5)
+                Stroke(b, Config.Theme.Edge, 1)
+                b.MouseEnter:Connect(function() Tween(b, TI_FAST, { TextColor3 = Config.Theme.Accent }) end)
+                b.MouseLeave:Connect(function() Tween(b, TI_FAST, { TextColor3 = Config.Theme.TextDim }) end)
+                b.MouseButton1Click:Connect(onClick)
+            end
+
+            smallButton("Select Shown", 0, 8, function()
+                for _, item in ipairs(items) do
+                    if item.btn.Visible then
+                        selected[item.opt] = true
+                        paint(item)
+                    end
+                end
+                refreshHeader()
+                fire()
+            end)
+            smallButton("Clear", 0.5, 4, function()
+                for _, item in ipairs(items) do
+                    selected[item.opt] = nil
+                    paint(item)
+                end
+                refreshHeader()
+                fire()
+            end)
+        end
+
         for i, opt in ipairs(options) do
             local ob = Instance.new("TextButton")
             ob.BackgroundColor3       = Config.Theme.Elevated
@@ -1020,25 +1107,48 @@ function Library:NewSection(name)
             ob.Size                   = UDim2.new(1, 0, 0, itemH)
             ob.LayoutOrder            = i
             ob.Text                   = opt
-            ob.TextColor3             = Config.Theme.TextDim
+            ob.TextColor3             = selected[opt] and Config.Theme.Text or Config.Theme.TextDim
             ob.TextSize               = 12
             ob.Font                   = Enum.Font.Gotham
             ob.TextXAlignment         = Enum.TextXAlignment.Left
             ob.Parent                 = list
             local p = Instance.new("UIPadding"); p.PaddingLeft = UDim.new(0, 14); p.Parent = ob
 
-            table.insert(items, { btn = ob, key = string.lower(opt) })
+            local box
+            if multi then
+                box = Instance.new("Frame")
+                box.BackgroundColor3 = selected[opt] and Config.Theme.Accent or Config.Theme.Secondary
+                box.BorderSizePixel  = 0
+                box.Size             = UDim2.new(0, 14, 0, 14)
+                box.Position         = UDim2.new(1, -28, 0.5, -7)
+                box.Parent           = ob
+                Corner(box, 4)
+                Stroke(box, Config.Theme.Edge, 1)
+            end
+
+            local item = { btn = ob, key = string.lower(opt), opt = opt, box = box }
+            table.insert(items, item)
 
             ob.MouseEnter:Connect(function()
                 Tween(ob, TI_FAST, { BackgroundTransparency = 0.7, TextColor3 = Config.Theme.Text })
             end)
             ob.MouseLeave:Connect(function()
-                Tween(ob, TI_FAST, { BackgroundTransparency = 1, TextColor3 = Config.Theme.TextDim })
+                Tween(ob, TI_FAST, {
+                    BackgroundTransparency = 1,
+                    TextColor3 = selected[opt] and Config.Theme.Text or Config.Theme.TextDim,
+                })
             end)
             ob.MouseButton1Click:Connect(function()
-                valLbl.Text = opt
-                setOpen(false)
-                if props.Callback then props.Callback(opt) end
+                if multi then
+                    selected[opt] = (not selected[opt]) or nil
+                    paint(item)
+                    refreshHeader()
+                    fire()
+                else
+                    valLbl.Text = opt
+                    setOpen(false)
+                    if props.Callback then props.Callback(opt) end
+                end
             end)
         end
 
@@ -1058,7 +1168,17 @@ function Library:NewSection(name)
             setOpen(not isOpen)
         end)
 
-        return dd
+        local obj = { Row = dd }
+        function obj.GetSelected() return getSelected() end
+        function obj.SetSelected(tbl)
+            selected = {}
+            for _, opt in ipairs(tbl or {}) do
+                if seen[opt] then selected[opt] = true end
+            end
+            for _, item in ipairs(items) do paint(item) end
+            refreshHeader()
+        end
+        return obj
     end
 
     function section.NewTextBox(props)
