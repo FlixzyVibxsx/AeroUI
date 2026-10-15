@@ -231,6 +231,258 @@ Section.NewButton({
 	end
 })
 
+Section.NewButton({
+	Text = "Set Neon OC",
+	Callback = function()
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonHornBig1",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonHornBig2",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"RightArm",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)	
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"LeftArm",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"TailFluff1",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"TailFluff2",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"TailFluff3",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"TailFluff4",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"OceanFin",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingL1",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingL2",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingL3",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingL4",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingL5",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingR1",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingR2",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingR3",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingR4",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingR5",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingLDew",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"DragonWingRDew",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"LeftWingStart",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"RightWingStart",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"Ocean1Secondary",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		Event:FireServer(
+			"Color",
+			"Ocean2Secondary",
+			chosenColor,
+			{
+			    Material = "Neon",
+			    MaterialVariant = ""
+			}
+		)
+	end
+})
 
 local Section = UI:NewSection("Settings")
 
