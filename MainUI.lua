@@ -5,7 +5,7 @@
 
 	Free open source
 
-	Version Number: 1.0.5
+	Version Number: 1.0.6
 ]]--
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/FlixzyVibxsx/AeroUI/refs/heads/main/Lib.lua"))()
@@ -20,7 +20,7 @@ Section.NewParagraph({
     "Made by rFlixzypoo",
     "Assets from q_ow2",
     "Free and Open Source",
-    "Version: 1.0.5",
+    "Version: 1.0.6",
     "Flixz is a simp for his girlfriend <3",
 })
 
@@ -164,9 +164,10 @@ Section.NewDropdown({
 
 Section.NewDropdown({
 	Text = "Part to Color",
+	Multi = true,
 	Searchable = true,
 	MaxHeight = 200,
-	Default = "EyeColor1",
+	Default = {"EyeColor1"},
 	Options = {"EyeColor1", "EyeColor2", "Pupil1", "Pupil2", "White1", "White2", "Lash1", "Lash2", "Head", "Cheeks", "Muzzle",
 	"Eyebrow1", "Eyebrow2", "EyeLid", "Nose", "Jaw", "Gum", "Toungue1", "Toungue2", "NeckSecondary", "Torso", "TorsoSecondary",
 	"Hip", "HipSecondary", "RightShoulder", "RightArm", "RightLowerArm", "DragonFoot1", "LeftShoulder", "LeftArm", "LeftLowerArm",
@@ -182,9 +183,8 @@ Section.NewDropdown({
 	"DragonTip", "LeftWingStart", "LeftWing2", "LeftWing3", "RightWingStart", "RightWing2", "RightWing3", "Ocean1Primary", "Ocean1Secondary",
 	"Ocean2Primary", "Ocean2Secondary", "OceanTailPrimary", "OceanTailSecondary", "OceanDot1", "OceanDot2", "OceanDot3", "OceanDot4", 
 	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3",},
-	Callback = function(option)
-		UI:Notify("Part Selected", "You selected: " .. option, 2)
-		Part = option
+	Callback = function(selectedParts)
+		Parts = selectedParts
 	end
 })
 
@@ -279,16 +279,24 @@ Section.NewButton({
 Section.NewButton({
 	Text = "Set Part Color/Material",
 	Callback = function()
+		if #Parts == 0 then
+			UI:Notify("No Parts", "Select at least one part first", 2)
+			return
+		end
+
 		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
-		Event:FireServer(
-			"Color",
-			Part,
-			chosenColor,
-			{
-			    Material = Material,
-			    MaterialVariant = ""
-			}
-		)
+		for _, partName in ipairs(Parts) do
+			Event:FireServer(
+				"Color",
+				partName,
+				chosenColor,
+				{
+					Material = Material,
+					MaterialVariant = ""
+				}
+			)
+		end
+		UI:Notify("Applied", #Parts .. " part(s) updated", 2)
 	end
 })
 
