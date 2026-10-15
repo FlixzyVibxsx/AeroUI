@@ -362,27 +362,6 @@ function Library.new()
     minBtn.Name             = "MinBtn"
     minBtn.Parent           = titleBar
     Corner(minBtn, 5)
-    dot.Parent           = titleBar
-    Corner(dot, 3)
-
-    Label(titleBar, { Text = Config.Title, Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 28, 0, 0) })
-
-    self.IsMinimized = false
-    self.ExpandedHeight = Config.Size.Y.Offset
-    self.ExpandedWidth = Config.Size.X.Offset
-
-    local minBtn = Instance.new("TextButton")
-    minBtn.BackgroundColor3 = Config.Theme.Elevated
-    minBtn.BorderSizePixel  = 0
-    minBtn.Size             = UDim2.new(0, 18, 0, 18)
-    minBtn.Position         = UDim2.new(1, -50, 0.5, -9)
-    minBtn.Text             = "–"
-    minBtn.TextColor3       = Config.Theme.CloseText
-    minBtn.TextSize         = 14
-    minBtn.Font             = Enum.Font.GothamBold
-    minBtn.Name             = "MinBtn"
-    minBtn.Parent           = titleBar
-    Corner(minBtn, 5)
     minBtn.MouseEnter:Connect(function() Tween(minBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Accent }) end)
     minBtn.MouseLeave:Connect(function() Tween(minBtn, TI_FAST, { BackgroundColor3 = Config.Theme.Elevated }) end)
 
@@ -895,15 +874,36 @@ function Library:NewSection(name)
     end
 
     function section.NewDropdown(props)
-        local options    = props.Options or {}
-        local itemH      = 30
-        local listHeight = #options * itemH
-        local isOpen     = false
+        local itemH    = 30
+        local headerH  = 32
+        local maxListH = props.MaxHeight or 150
+        local isOpen   = false
+
+        local options, seen = {}, {}
+        for _, opt in ipairs(props.Options or {}) do
+            if not seen[opt] then
+                seen[opt] = true
+                table.insert(options, opt)
+            end
+        end
+
+        local searchable = props.Searchable
+        if searchable == nil then searchable = #options > 8 end
+
+        local listTop      = headerH + 1 + (searchable and 32 or 0)
+        local visibleCount = #options
+
+        local function listHeight()
+            return math.min(maxListH, math.max(visibleCount, 1) * itemH)
+        end
+        local function openHeight()
+            return listTop + listHeight() + 4
+        end
 
         local dd = Instance.new("Frame")
         dd.BackgroundColor3 = Config.Theme.Elevated
         dd.BorderSizePixel  = 0
-        dd.Size             = UDim2.new(1, 0, 0, 32)
+        dd.Size             = UDim2.new(1, 0, 0, headerH)
         dd.ClipsDescendants = true
         dd.LayoutOrder      = nextOrder()
         dd.Name             = "Dropdown"
@@ -916,34 +916,118 @@ function Library:NewSection(name)
         local arrow  = Label(dd, { Text = "v", Color = Config.Theme.TextDim, Size = 11, AlignX = Enum.TextXAlignment.Center, Pos = UDim2.new(1, -26, 0, 0), FrameSize = UDim2.new(0, 22, 0, 32) })
 
         local sep = Instance.new("Frame")
-        sep.BackgroundColor3     = Config.Theme.Edge
-        sep.BackgroundTransparency = 0
-        sep.BorderSizePixel      = 0
-        sep.Size                 = UDim2.new(1, -24, 0, 1)
-        sep.Position             = UDim2.new(0, 12, 0, 32)
-        sep.Parent               = dd
+        sep.BackgroundColor3 = Config.Theme.Edge
+        sep.BorderSizePixel  = 0
+        sep.Size             = UDim2.new(1, -24, 0, 1)
+        sep.Position         = UDim2.new(0, 12, 0, headerH)
+        sep.Parent           = dd
 
-        local list = Instance.new("Frame")
+        local searchBox
+        if searchable then
+            local sbBg = Instance.new("Frame")
+            sbBg.BackgroundColor3 = Config.Theme.Secondary
+            sbBg.BorderSizePixel  = 0
+            sbBg.Size             = UDim2.new(1, -16, 0, 24)
+            sbBg.Position         = UDim2.new(0, 8, 0, headerH + 6)
+            sbBg.Parent           = dd
+            Corner(sbBg, 5)
+            local sbStroke = Stroke(sbBg, Config.Theme.Edge, 1)
+
+            searchBox = Instance.new("TextBox")
+            searchBox.BackgroundTransparency = 1
+            searchBox.Text              = ""
+            searchBox.PlaceholderText   = "Search..."
+            searchBox.PlaceholderColor3 = Config.Theme.TextDim
+            searchBox.TextColor3        = Config.Theme.Text
+            searchBox.TextSize          = 12
+            searchBox.Font              = Enum.Font.Gotham
+            searchBox.ClearTextOnFocus  = false
+            searchBox.TextXAlignment    = Enum.TextXAlignment.Left
+            searchBox.Size              = UDim2.new(1, -12, 1, 0)
+            searchBox.Position          = UDim2.new(0, 6, 0, 0)
+            searchBox.Parent            = sbBg
+
+            searchBox.Focused:Connect(function()
+                Tween(sbStroke, TI_FAST, { Color = Config.Theme.Accent, Thickness = 1.5 })
+            end)
+            searchBox.FocusLost:Connect(function()
+                Tween(sbStroke, TI_FAST, { Color = Config.Theme.Edge, Thickness = 1 })
+            end)
+        end
+
+        local list = Instance.new("ScrollingFrame")
         list.BackgroundTransparency = 1
         list.BorderSizePixel        = 0
-        list.Size                   = UDim2.new(1, 0, 0, listHeight)
-        list.Position               = UDim2.new(0, 0, 0, 33)
+        list.Size                   = UDim2.new(1, 0, 0, listHeight())
+        list.Position               = UDim2.new(0, 0, 0, listTop)
+        list.CanvasSize             = UDim2.new(0, 0, 0, 0)
+        list.AutomaticCanvasSize    = Enum.AutomaticSize.Y
+        list.ScrollBarThickness     = 3
+        list.ScrollBarImageColor3   = Config.Theme.Accent
+        list.ScrollingDirection     = Enum.ScrollingDirection.Y
         list.Parent                 = dd
+
+        local listLayout = Instance.new("UIListLayout")
+        listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        listLayout.Parent    = list
+
+        local noResults = Label(list, { Text = "No results", Color = Config.Theme.TextDim, Size = 12,
+            AlignX = Enum.TextXAlignment.Center, FrameSize = UDim2.new(1, 0, 0, itemH) })
+        noResults.LayoutOrder = 0
+        noResults.Visible     = false
+
+        local items = {}
+
+        local function applyFilter()
+            local q = searchBox and string.lower((searchBox.Text:gsub("^%s+", ""):gsub("%s+$", ""))) or ""
+            visibleCount = 0
+            for _, item in ipairs(items) do
+                local match = q == "" or string.find(item.key, q, 1, true) ~= nil
+                item.btn.Visible = match
+                if match then visibleCount = visibleCount + 1 end
+            end
+            noResults.Visible = searchable and visibleCount == 0
+            list.CanvasPosition = Vector2.new(0, 0)
+            list.Size = UDim2.new(1, 0, 0, listHeight())
+            if isOpen then
+                Tween(dd, TI_FAST, { Size = UDim2.new(1, 0, 0, openHeight()) })
+            end
+        end
+
+        if searchBox then
+            searchBox:GetPropertyChangedSignal("Text"):Connect(applyFilter)
+        end
+
+        local function setOpen(open)
+            isOpen = open
+            if not open and searchBox then
+                searchBox.Text = ""
+                applyFilter()
+            end
+            Tween(arrow, TI_MED, { Rotation = open and 180 or 0 })
+            Tween(dd, TI_MED, { Size = UDim2.new(1, 0, 0, open and openHeight() or headerH) })
+            Tween(ddStroke, TI_FAST, {
+                Color = open and Config.Theme.Accent or Config.Theme.Edge,
+                Thickness = open and 1.5 or 1,
+            })
+        end
 
         for i, opt in ipairs(options) do
             local ob = Instance.new("TextButton")
-            ob.BackgroundColor3     = Config.Theme.Elevated
+            ob.BackgroundColor3       = Config.Theme.Elevated
             ob.BackgroundTransparency = 1
-            ob.BorderSizePixel      = 0
-            ob.Size                 = UDim2.new(1, 0, 0, itemH)
-            ob.Position             = UDim2.new(0, 0, 0, (i-1)*itemH)
-            ob.Text                 = opt
-            ob.TextColor3           = Config.Theme.TextDim
-            ob.TextSize             = 12
-            ob.Font                 = Enum.Font.Gotham
-            ob.TextXAlignment       = Enum.TextXAlignment.Left
-            ob.Parent               = list
+            ob.BorderSizePixel        = 0
+            ob.Size                   = UDim2.new(1, 0, 0, itemH)
+            ob.LayoutOrder            = i
+            ob.Text                   = opt
+            ob.TextColor3             = Config.Theme.TextDim
+            ob.TextSize               = 12
+            ob.Font                   = Enum.Font.Gotham
+            ob.TextXAlignment         = Enum.TextXAlignment.Left
+            ob.Parent                 = list
             local p = Instance.new("UIPadding"); p.PaddingLeft = UDim.new(0, 14); p.Parent = ob
+
+            table.insert(items, { btn = ob, key = string.lower(opt) })
 
             ob.MouseEnter:Connect(function()
                 Tween(ob, TI_FAST, { BackgroundTransparency = 0.7, TextColor3 = Config.Theme.Text })
@@ -953,17 +1037,14 @@ function Library:NewSection(name)
             end)
             ob.MouseButton1Click:Connect(function()
                 valLbl.Text = opt
-                isOpen = false
-                Tween(arrow, TI_FAST, { Rotation = 0 })
-                Tween(dd, TI_MED, { Size = UDim2.new(1, 0, 0, 32) })
-                Tween(ddStroke, TI_FAST, { Color = Config.Theme.Edge })
+                setOpen(false)
                 if props.Callback then props.Callback(opt) end
             end)
         end
 
         local hdrBtn = Instance.new("TextButton")
         hdrBtn.BackgroundTransparency = 1
-        hdrBtn.Size   = UDim2.new(1, 0, 0, 32)
+        hdrBtn.Size   = UDim2.new(1, 0, 0, headerH)
         hdrBtn.Text   = ""
         hdrBtn.Parent = dd
 
@@ -974,10 +1055,7 @@ function Library:NewSection(name)
             if not isOpen then Tween(ddStroke, TI_FAST, { Color = Config.Theme.Edge, Thickness = 1 }) end
         end)
         hdrBtn.MouseButton1Click:Connect(function()
-            isOpen = not isOpen
-            Tween(arrow, TI_MED, { Rotation = isOpen and 180 or 0 })
-            Tween(dd, TI_MED, { Size = UDim2.new(1, 0, 0, isOpen and 33 + listHeight or 32) })
-            Tween(ddStroke, TI_FAST, { Color = isOpen and Config.Theme.Accent or Config.Theme.Edge, Thickness = isOpen and 1.5 or 1 })
+            setOpen(not isOpen)
         end)
 
         return dd
