@@ -54,6 +54,7 @@ local Section = UI:NewSection("Customization")
 
 local chosenColor = Color3.fromRGB(0, 0, 0)
 local Value = 1
+local Material = "ForceField"
 
 Section.NewDropdown({
 	Text = "Select Accessory",
@@ -166,6 +167,14 @@ Section.NewColorPicker({
     end
 })
 
+Section.NewTextBox({
+	Text = "Material",
+	Placeholder = "Enter Material",
+	Callback = function(text)
+		Material = text
+	end
+})
+
 Section.NewButton({
 	Text = "Set Name Color",
 	Callback = function()
@@ -228,6 +237,7 @@ Section.NewButton({
     		    MaterialVariant = ""
     		}
 		)
+		
 	end
 })
 
@@ -240,7 +250,7 @@ Section.NewButton({
 			"DragonHornBig1",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -250,7 +260,7 @@ Section.NewButton({
 			"DragonHornBig2",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -260,7 +270,7 @@ Section.NewButton({
 			"RightArm",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)	
@@ -270,7 +280,7 @@ Section.NewButton({
 			"LeftArm",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -280,7 +290,7 @@ Section.NewButton({
 			"TailFluff1",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -290,7 +300,7 @@ Section.NewButton({
 			"TailFluff2",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
@@ -299,7 +309,7 @@ Section.NewButton({
 			"TailFluff3",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
@@ -308,7 +318,7 @@ Section.NewButton({
 			"TailFluff4",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -318,7 +328,7 @@ Section.NewButton({
 			"OceanFin",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -328,7 +338,7 @@ Section.NewButton({
 			"DragonWingL1",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -338,7 +348,7 @@ Section.NewButton({
 			"DragonWingL2",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -348,7 +358,7 @@ Section.NewButton({
 			"DragonWingL3",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -358,7 +368,7 @@ Section.NewButton({
 			"DragonWingL4",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -368,7 +378,7 @@ Section.NewButton({
 			"DragonWingL5",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -378,7 +388,7 @@ Section.NewButton({
 			"DragonWingR1",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -388,7 +398,7 @@ Section.NewButton({
 			"DragonWingR2",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -398,7 +408,7 @@ Section.NewButton({
 			"DragonWingR3",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -408,7 +418,7 @@ Section.NewButton({
 			"DragonWingR4",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
@@ -417,7 +427,7 @@ Section.NewButton({
 			"DragonWingR5",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -427,7 +437,7 @@ Section.NewButton({
 			"DragonWingLDew",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -437,7 +447,7 @@ Section.NewButton({
 			"DragonWingRDew",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -447,7 +457,7 @@ Section.NewButton({
 			"LeftWingStart",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -457,7 +467,7 @@ Section.NewButton({
 			"RightWingStart",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -467,7 +477,7 @@ Section.NewButton({
 			"Ocean1Secondary",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
@@ -477,7 +487,7 @@ Section.NewButton({
 			"Ocean2Secondary",
 			chosenColor,
 			{
-			    Material = "Neon",
+			    Material = Material,
 			    MaterialVariant = ""
 			}
 		)
