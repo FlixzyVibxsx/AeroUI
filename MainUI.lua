@@ -12,7 +12,7 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Flixz
 
 local UI = Library.new()
 print(UI.SetToggleKey)
-UI:SetToggleKey(Enum.KeyCode.LeftShift)
+UI:SetToggleKey(Enum.KeyCode.F1)
 UI:Notify("Welcome", "Aero UI Loaded Successfully", 3)
 
 local Section = UI:NewSection("Credits")
