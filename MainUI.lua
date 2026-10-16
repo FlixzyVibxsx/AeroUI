@@ -167,7 +167,7 @@ Section.NewDropdown({
 	Multi = true,
 	Searchable = true,
 	MaxHeight = 200,
-	Default = {"ChestFluff"},
+	Default = {"EyeColor1"},
 	Options = {"EyeColor1", "EyeColor2", "Pupil1", "Pupil2", "White1", "White2", "Lash1", "Lash2", "Head", "Cheeks", "Muzzle",
 	"Eyebrow1", "Eyebrow2", "EyeLid", "Nose", "Jaw", "Gum", "Toungue1", "Toungue2", "NeckSecondary", "Torso", "TorsoSecondary",
 	"Hip", "HipSecondary", "RightShoulder", "RightArm", "RightLowerArm", "DragonFoot1", "LeftShoulder", "LeftArm", "LeftLowerArm",
@@ -182,7 +182,7 @@ Section.NewDropdown({
 	"DragonSpike6", "DragonSpike7", "DragonSpike8", "DragonSpike9", "DragonSpike10", "DragonHornTop1", "DragonHornTop2", "DragonHornTop3",
 	"DragonTip", "LeftWingStart", "LeftWing2", "LeftWing3", "RightWingStart", "RightWing2", "RightWing3", "Ocean1Primary", "Ocean1Secondary",
 	"Ocean2Primary", "Ocean2Secondary", "OceanTailPrimary", "OceanTailSecondary", "OceanDot1", "OceanDot2", "OceanDot3", "OceanDot4", 
-	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3", "ChestFluff", "BackFluff",},
+	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3", "ChestFluff", "BackFluff","FrontChestFluff",},
 	Callback = function(selectedParts)
 		Parts = selectedParts
 	end
