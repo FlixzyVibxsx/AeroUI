@@ -1485,6 +1485,71 @@ function Library:NewSection(name)
         return obj
     end
 
+        function section.NewProfile(props)
+        props = props or {}
+        local userId = props.UserId or Player.UserId
+        local isLocal = (userId == Player.UserId)
+
+        local row = makeRow(80)
+        Stroke(row, Config.Theme.Edge, 1)
+
+        -- avatar
+        local avatarBg = Instance.new("Frame")
+        avatarBg.BackgroundColor3 = Config.Theme.Secondary
+        avatarBg.BorderSizePixel  = 0
+        avatarBg.Size             = UDim2.new(0, 56, 0, 56)
+        avatarBg.Position         = UDim2.new(0, 12, 0.5, -28)
+        avatarBg.Parent           = row
+        Corner(avatarBg, 10)
+        Stroke(avatarBg, Config.Theme.Accent, 1.5)
+
+        local avatar = Instance.new("ImageLabel")
+        avatar.BackgroundTransparency = 1
+        avatar.BorderSizePixel = 0
+        avatar.Size            = UDim2.new(1, 0, 1, 0)
+        avatar.ScaleType       = Enum.ScaleType.Crop
+        avatar.Image           = string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", userId)
+        avatar.Parent          = avatarBg
+        Corner(avatar, 10)
+
+        -- text lines (scaled so long names never overflow the card)
+        local function line(text, color, maxSize, font, y, h)
+            local l = Label(row, {
+                Text = text, Color = color, Size = maxSize,
+                Pos = UDim2.new(0, 80, 0, y), FrameSize = UDim2.new(1, -92, 0, h),
+            })
+            l.Font       = font
+            l.TextScaled = true
+            local c = Instance.new("UITextSizeConstraint")
+            c.MaxTextSize = maxSize
+            c.MinTextSize = 8
+            c.Parent = l
+            return l
+        end
+
+        local title   = line(props.Title or "Welcome to Aero UI", Config.Theme.Text,    15, Enum.Font.GothamBold,   10, 22)
+        local userLbl = line("@" .. (isLocal and Player.Name or "..."), Config.Theme.Accent, 13, Enum.Font.GothamMedium, 33, 18)
+        local infoLbl = line("ID: " .. tostring(userId),                  Config.Theme.TextDim, 11, Enum.Font.Gotham,       53, 16)
+
+        if isLocal then
+            infoLbl.Text = string.format("ID: %d  •  %d days old", userId, Player.AccountAge)
+        end
+
+        -- confirm the name from the user ID
+        task.spawn(function()
+            local ok, name = pcall(function()
+                return Players:GetNameFromUserIdAsync(userId)
+            end)
+            if ok and name then
+                userLbl.Text = "@" .. name
+            end
+        end)
+
+        local obj = { Row = row }
+        function obj.SetTitle(t) title.Text = t end
+        return obj
+    end
+
     function section.NewKeybind(props)
         local row       = makeRow(32)
         local isBinding = false
