@@ -584,18 +584,3 @@ Section.NewButton({
         UI:Notify("Theme", "Theme reset to default", 2)
     end
 })
-
-Section.NewButton({
-    Text = "Reset",
-    Callback = function()
-        UI:Notify("Reset", "Settings reset!", 2)
-    end
-})
-
-Section.NewKeybind({
-    Text = "Toggle UI Key",
-    Default = "F1",
-    Callback = function(key)
-        UI:SetToggleKey(key)
-    end
-})
