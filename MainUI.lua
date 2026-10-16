@@ -167,7 +167,7 @@ Section.NewDropdown({
 	Multi = true,
 	Searchable = true,
 	MaxHeight = 200,
-	Default = {"EyeColor1"},
+	Default = {"ChestFluff"},
 	Options = {"EyeColor1", "EyeColor2", "Pupil1", "Pupil2", "White1", "White2", "Lash1", "Lash2", "Head", "Cheeks", "Muzzle",
 	"Eyebrow1", "Eyebrow2", "EyeLid", "Nose", "Jaw", "Gum", "Toungue1", "Toungue2", "NeckSecondary", "Torso", "TorsoSecondary",
 	"Hip", "HipSecondary", "RightShoulder", "RightArm", "RightLowerArm", "DragonFoot1", "LeftShoulder", "LeftArm", "LeftLowerArm",
