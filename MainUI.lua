@@ -182,7 +182,7 @@ Section.NewDropdown({
 	"DragonSpike6", "DragonSpike7", "DragonSpike8", "DragonSpike9", "DragonSpike10", "DragonHornTop1", "DragonHornTop2", "DragonHornTop3",
 	"DragonTip", "LeftWingStart", "LeftWing2", "LeftWing3", "RightWingStart", "RightWing2", "RightWing3", "Ocean1Primary", "Ocean1Secondary",
 	"Ocean2Primary", "Ocean2Secondary", "OceanTailPrimary", "OceanTailSecondary", "OceanDot1", "OceanDot2", "OceanDot3", "OceanDot4", 
-	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3", "ChestFluff", "BackFluff","FrontChestFluff",},
+	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3", "ChestFluff", "BackFluff", "FrontChestFluff",},
 	Callback = function(selectedParts)
 		Parts = selectedParts
 	end
