@@ -61,12 +61,6 @@ Section.NewButton({
 
 local Section = UI:NewSection("Customization")
 
-local chosenColor   = Library.DecodeColor(UI:GetSetting("Color")) or Color3.fromRGB(0, 0, 0)
-local Material      = UI:GetSetting("Material", "Neon")
-local Parts         = UI:GetSetting("Parts", { "EyeColor1" })
-local AccessoryName = UI:GetSetting("Accessory", AccessoryNames[1])
-local Value         = table.find(AccessoryNames, AccessoryName) or 1
-
 local AccessoryNames = {"Slider Bracelets", "Cross Bracelets", "Leaves", "Winter Boots", "Double Bracelets", "Curly", "Punk",
 	"Lonely Woof", "Swiped Back", "Braided", "Long", "Ewooftional", "Long Straight", "Bed Head", "Short Spiky", "Long Spiky", 
 	"Spiky Punk", "Spiky", "Emo-Punk", "Sidecut", "Scene", "Extreme-Edge", "Long Sidecut", "Right Ear Piercing", 
@@ -87,6 +81,12 @@ local PartOptions    = { "EyeColor1", "EyeColor2", "Pupil1", "Pupil2", "White1",
 	"DragonTip", "LeftWingStart", "LeftWing2", "LeftWing3", "RightWingStart", "RightWing2", "RightWing3", "Ocean1Primary", "Ocean1Secondary",
 	"Ocean2Primary", "Ocean2Secondary", "OceanTailPrimary", "OceanTailSecondary", "OceanDot1", "OceanDot2", "OceanDot3", "OceanDot4", 
 	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3", "ChestFluff", "BackFluff","FrontChestFluff", "Neck", }
+
+local chosenColor   = Library.DecodeColor(UI:GetSetting("Color")) or Color3.fromRGB(0, 0, 0)
+local Material      = UI:GetSetting("Material", "Neon")
+local Parts         = UI:GetSetting("Parts", { "EyeColor1" })
+local AccessoryName = UI:GetSetting("Accessory", AccessoryNames[1])
+local Value         = table.find(AccessoryNames, AccessoryName) or 1
 
 Section.NewDropdown({
 	Text = "Select Accessory",
