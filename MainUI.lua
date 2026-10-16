@@ -5,15 +5,19 @@
 
 	Free open source
 
-	Version Number: 1.0.8
+	Version Number: 1.0.11
 ]]--
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/FlixzyVibxsx/AeroUI/refs/heads/main/Lib.lua"))()
 
-local UI = Library.new()
-print(UI.SetToggleKey)
-UI:SetToggleKey(Enum.KeyCode.F1)
+local UI = Library.new({ ConfigName = "WolvesLife3" })
+if not UI:GetSetting("ToggleKey") then
+    UI:SetToggleKey(Enum.KeyCode.F1)
+end
 UI:Notify("Welcome", "Aero UI Loaded Successfully", 3)
+if not Library.CanSave() then
+    UI:Notify("Storage", "Executor can't save files - settings won't persist", 4)
+end
 
 local Section = UI:NewSection("Credits")
 
@@ -25,7 +29,7 @@ Section.NewParagraph({
     "Made by rFlixzypoo",
     "Assets from q_ow2",
     "Free and Open Source",
-    "Version: 1.0.8",
+    "Version: 1.0.11",
     "Flixz is a simp for his girlfriend <3",
 })
 
@@ -57,10 +61,11 @@ Section.NewButton({
 
 local Section = UI:NewSection("Customization")
 
-local chosenColor = Color3.fromRGB(0, 0, 0)
-local Value = 1
-local Material = "Neon"
-local Part = "EyeColor1"
+local chosenColor   = Library.DecodeColor(UI:GetSetting("Color")) or Color3.fromRGB(0, 0, 0)
+local Material      = UI:GetSetting("Material", "Neon")
+local Parts         = UI:GetSetting("Parts", { "EyeColor1" })
+local AccessoryName = UI:GetSetting("Accessory", AccessoryNames[1])
+local Value         = table.find(AccessoryNames, AccessoryName) or 1
 
 local AccessoryNames = {"Slider Bracelets", "Cross Bracelets", "Leaves", "Winter Boots", "Double Bracelets", "Curly", "Punk",
 	"Lonely Woof", "Swiped Back", "Braided", "Long", "Ewooftional", "Long Straight", "Bed Head", "Short Spiky", "Long Spiky", 
@@ -90,97 +95,8 @@ Section.NewDropdown({
 	Default = "Slider Bracelets",
 	Options = AccessoryNames,
 	Callback = function(option)
-		UI:Notify("Accessory Selected", "You selected: " .. option, 2)
-		if option == "Slider Bracelets" then
-			Value = 1
-		elseif option == "Cross Bracelets" then
-			Value = 2
-		elseif option == "Leaves" then
-			Value = 3
-		elseif option == "Winter Boots" then
-			Value = 4				
-		elseif option == "Double Bracelets" then
-			Value = 5
-		elseif option == "Curly" then
-			Value = 6
-		elseif option == "Punk" then
-			Value = 7
-		elseif option == "Lonely Woof" then
-			Value = 8
-		elseif option == "Swiped Back" then
-			Value = 9
-		elseif option == "Braided" then
-			Value = 10
-		elseif option == "Long" then
-			Value = 11
-		elseif option == "Ewooftional" then
-			Value = 12
-		elseif option == "Long Straight" then
-			Value = 13
-		elseif option == "Bed Head" then
-			Value = 14
-		elseif option == "Short Spiky" then
-			Value = 15
-		elseif option == "Long Spiky" then
-			Value = 16
-		elseif option == "Spiky Punk" then
-			Value = 17
-		elseif option == "Spiky" then
-			Value = 18
-		elseif option == "Emo-Punk" then
-			Value = 19
-		elseif option == "Sidecut" then
-			Value = 20
-		elseif option == "Scene" then
-			Value = 21
-		elseif option == "Extreme-Edge" then
-			Value = 22
-		elseif option == "Long Sidecut" then
-			Value = 23
-		elseif option == "Right Ear Piercing" then
-			Value = 24
-		elseif option == "Left Ear Piercing" then
-			Value = 25
-		elseif option == "Septum" then
-			Value = 26
-		elseif option == "Eyebrow Piercing" then
-			Value = 27
-		elseif option == "Snake Bites" then
-			Value = 28
-		elseif option == "Guitar" then
-			Value = 29
-		elseif option == "Swords" then
-			Value = 30
-		elseif option == "Cape" then
-			Value = 31
-		elseif option == "Medic" then
-			Value = 32
-		elseif option == "Flowers" then
-			Value = 33
-		elseif option == "Rope" then
-			Value = 34
-		elseif option == "Ripped Shirt" then
-			Value = 35
-		elseif option == "Bags" then
-			Value = 36
-		elseif option == "Sword Set 1" then
-			Value = 37
-		elseif option == "Sword Set 2" then
-			Value = 38
-		elseif option == "Sword 1" then
-			Value = 39
-		elseif option == "Sword 2" then
-			Value = 40
-		elseif option == "Chains" then
-			Value = 41
-		elseif option == "LeavesBack" then
-			Value = 42
-		elseif option == "Backpack" then
-			Value = 43
-		elseif option == "Scars" then
-			Value = 44
-		end
-
+		Value = table.find(AccessoryNames, option) or 1
+		UI:SetSetting("Accessory", option)
 	end
 })
 
@@ -193,6 +109,7 @@ Section.NewDropdown({
 	Options = PartOptions,
 	Callback = function(selectedParts)
 		Parts = selectedParts
+		UI:SetSetting("Parts", selectedParts)
 	end
 })
 
@@ -205,8 +122,8 @@ Section.NewDropdown({
 	"DiamondPlate", "Foil", "Grass", "Ice", "Marble", "Metal", "Rock", "Sand", "SmoothPlastic", "Snow", 
 	"Fabric",},
 	Callback = function(option)
-		UI:Notify("Material Selected", "You selected: " .. option, 2)
 		Material = option
+		UI:SetSetting("Material", option)
 	end
 })
 
@@ -215,6 +132,7 @@ Section.NewColorPicker({
     Default = chosenColor,
     Callback = function(color)
         chosenColor = color
+		UI:SetSetting("Color", Library.EncodeColor(chosenColor))
     end
 })
 
@@ -311,27 +229,130 @@ Section.NewButton({
 local Section = UI:NewSection("Copy Design")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer       = game:GetService("Players").LocalPlayer
 local ACCESSORY_TARGETS = { "Color1", "MeshPart", "Piercing", "Hat" }
+local ROOT_NAMES        = { "PlayerCharacters", "Customizing" }  -- spawned / still customizing
 local NameBox
 
-local function getFolder()
-	return workspace:FindFirstChild("PlayerCharacters")
+local function getRoots()
+	local roots = {}
+	for _, n in ipairs(ROOT_NAMES) do
+		local r = workspace:FindFirstChild(n)
+		if r then table.insert(roots, r) end
+	end
+	return roots
 end
 
 local function getPlayerNames()
-	local names, folder = {}, getFolder()
-	if not folder then
-		warn("[CopyDesign] workspace.PlayerCharacters not found")
-		return names
-	end
-	for _, c in ipairs(folder:GetChildren()) do
-		table.insert(names, c.Name)
+	local names, seen = {}, {}
+	for _, root in ipairs(getRoots()) do
+		for _, c in ipairs(root:GetChildren()) do
+			if not seen[c.Name] then
+				seen[c.Name] = true
+				table.insert(names, c.Name)
+			end
+		end
 	end
 	return names
 end
 
+local function findModel(name)
+	for _, root in ipairs(getRoots()) do
+		local m = root:FindFirstChild(name)
+		if m then return m end
+	end
+end
+
 local function norm(s)
 	return string.lower((string.gsub(s, "[^%w]", "")))
+end
+
+local function partData(p)
+	return { C = Library.EncodeColor(p.Color), M = p.Material.Name, V = p.MaterialVariant }
+end
+
+-- read a model into a plain table (also what gets saved for OCs)
+local function readModel(model)
+	local snap = { Parts = {}, Accessories = {} }
+	local nParts, nAcc = 0, 0
+
+	for _, partName in ipairs(PartOptions) do
+		if not snap.Parts[partName] then
+			local inst = model:FindFirstChild(partName, true)
+			if inst and inst:IsA("BasePart") then
+				snap.Parts[partName] = partData(inst)
+				nParts = nParts + 1
+			end
+		end
+	end
+
+	local wanted = {}
+	for _, accName in ipairs(AccessoryNames) do wanted[norm(accName)] = accName end
+
+	for _, inst in ipairs(model:GetDescendants()) do
+		local accName = wanted[norm(inst.Name)]
+		if accName and not snap.Accessories[accName] then
+			local targets, foundAny = {}, false
+			for _, target in ipairs(ACCESSORY_TARGETS) do
+				local p = inst:FindFirstChild(target, true)
+				if p and p:IsA("BasePart") then
+					targets[target] = partData(p)
+					foundAny = true
+				end
+			end
+			if not foundAny then
+				local fb = inst:IsA("BasePart") and inst or inst:FindFirstChildWhichIsA("BasePart", true)
+				if fb then
+					for _, target in ipairs(ACCESSORY_TARGETS) do targets[target] = partData(fb) end
+					foundAny = true
+				end
+			end
+			if foundAny then
+				snap.Accessories[accName] = targets
+				nAcc = nAcc + 1
+			end
+		end
+	end
+	return snap, nParts, nAcc
+end
+
+-- send a snapshot to the game
+local function applySnapshot(snap, doParts, doAcc)
+	local nParts, nAcc, sent = 0, 0, 0
+	local function pace()
+		sent = sent + 1
+		if sent % 5 == 0 then task.wait(0.05) end
+	end
+
+	if doParts then
+		local Event = ReplicatedStorage.Events.UpdateColor
+		for partName, d in pairs(snap.Parts or {}) do
+			local color = Library.DecodeColor(d.C)
+			if color then
+				Event:FireServer("Color", partName, color, { Material = d.M, MaterialVariant = d.V or "" })
+				nParts = nParts + 1
+				pace()
+			end
+		end
+	end
+
+	if doAcc then
+		local Event = ReplicatedStorage.Events.ColorAccessory
+		for accName, targets in pairs(snap.Accessories or {}) do
+			local id = table.find(AccessoryNames, accName)
+			if id then
+				for target, d in pairs(targets) do
+					local color = Library.DecodeColor(d.C)
+					if color then
+						Event:FireServer("Color", id, target, color, { Material = d.M, MaterialVariant = d.V or "" })
+						pace()
+					end
+				end
+				nAcc = nAcc + 1
+			end
+		end
+	end
+	return nParts, nAcc
 end
 
 local function resolveTarget()
@@ -340,81 +361,12 @@ local function resolveTarget()
 		UI:Notify("Copy Design", "No matching player found", 2)
 		return nil
 	end
-	local folder = getFolder()
-	local model = folder and folder:FindFirstChild(name)
+	local model = findModel(name)
 	if not model then
-		UI:Notify("Copy Design", "Couldn't find " .. name .. " in PlayerCharacters", 2)
+		UI:Notify("Copy Design", "Couldn't find " .. name, 2)
 		return nil
 	end
 	return model, name
-end
-
-local function copyParts(model)
-	local Event = ReplicatedStorage.Events.UpdateColor
-	local done, seenPart = 0, {}
-	for _, partName in ipairs(PartOptions) do
-		if not seenPart[partName] then
-			seenPart[partName] = true
-			local inst = model:FindFirstChild(partName, true)
-			if inst and inst:IsA("BasePart") then
-				Event:FireServer("Color", partName, inst.Color, {
-					Material = inst.Material.Name,
-					MaterialVariant = inst.MaterialVariant,
-				})
-				done = done + 1
-				if done % 5 == 0 then task.wait(0.05) end
-			end
-		end
-	end
-	return done
-end
-
-local function copyAccessories(model)
-	local Event = ReplicatedStorage.Events.ColorAccessory
-	local wanted = {}
-	for id, accName in ipairs(AccessoryNames) do
-		wanted[norm(accName)] = id
-	end
-
-	local count, handled = 0, {}
-	for _, inst in ipairs(model:GetDescendants()) do
-		local id = wanted[norm(inst.Name)]
-		if id and not handled[id] then
-			handled[id] = true
-			local sent = false
-
-			local function send(target, part)
-				Event:FireServer("Color", id, target, part.Color, {
-					Material = part.Material.Name,
-					MaterialVariant = part.MaterialVariant,
-				})
-				sent = true
-			end
-
-			local foundAny = false
-			for _, target in ipairs(ACCESSORY_TARGETS) do
-				local p = inst:FindFirstChild(target, true)
-				if p and p:IsA("BasePart") then
-					send(target, p)
-					foundAny = true
-				end
-			end
-
-			-- fallback: no named sub-parts, so use the accessory's first part for every slot
-			if not foundAny then
-				local fallback = inst:IsA("BasePart") and inst or inst:FindFirstChildWhichIsA("BasePart", true)
-				if fallback then
-					for _, target in ipairs(ACCESSORY_TARGETS) do send(target, fallback) end
-				end
-			end
-
-			if sent then
-				count = count + 1
-				task.wait(0.03)
-			end
-		end
-	end
-	return count
 end
 
 NameBox = Section.NewAutoTextBox({
@@ -428,8 +380,7 @@ Section.NewButton({
 	Callback = function()
 		local model, name = resolveTarget()
 		if not model then return end
-		local p = copyParts(model)
-		local a = copyAccessories(model)
+		local p, a = applySnapshot((readModel(model)), true, true)
 		UI:Notify("Copied " .. name, p .. " parts, " .. a .. " accessories", 3)
 	end
 })
@@ -439,7 +390,8 @@ Section.NewButton({
 	Callback = function()
 		local model, name = resolveTarget()
 		if not model then return end
-		UI:Notify("Copied " .. name, copyParts(model) .. " parts", 3)
+		local p = applySnapshot((readModel(model)), true, false)
+		UI:Notify("Copied " .. name, p .. " parts", 3)
 	end
 })
 
@@ -448,7 +400,8 @@ Section.NewButton({
 	Callback = function()
 		local model, name = resolveTarget()
 		if not model then return end
-		UI:Notify("Copied " .. name, copyAccessories(model) .. " accessories", 3)
+		local _, a = applySnapshot((readModel(model)), false, true)
+		UI:Notify("Copied " .. name, a .. " accessories", 3)
 	end
 })
 
@@ -468,7 +421,104 @@ Section.NewButton({
 	end
 })
 
+local Section = UI:NewSection("My OCs")
+
+local function getOCs() return UI:GetSetting("OCs", {}) end
+
+local function trim(s) return (string.gsub(s, "^%s*(.-)%s*$", "%1")) end
+
+local OCBox = Section.NewAutoTextBox({
+	Text = "OC Name",
+	Placeholder = "Name your OC...",
+	SnapOnEnter = false,   -- so a new name isn't snapped onto an old one
+	GetOptions = function()
+		local names = {}
+		for name in pairs(getOCs()) do table.insert(names, name) end
+		return names
+	end,
+})
+
+Section.NewButton({
+	Text = "Save OC (from my character)",
+	Callback = function()
+		local name = trim(OCBox.GetText())
+		if name == "" then
+			UI:Notify("Save OC", "Type a name first", 2)
+			return
+		end
+		local model = findModel(LocalPlayer.Name)
+		if not model then
+			UI:Notify("Save OC", "Couldn't find your character", 2)
+			return
+		end
+		local snap, p, a = readModel(model)
+		if p + a == 0 then
+			UI:Notify("Save OC", "Nothing readable - try Debug: Print Model", 3)
+			return
+		end
+
+		local ocs = getOCs()
+		for existing in pairs(ocs) do   -- overwrite same name regardless of case
+			if string.lower(existing) == string.lower(name) then ocs[existing] = nil end
+		end
+		snap.Saved = os.time()
+		ocs[name] = snap
+		UI:SetSetting("OCs", ocs)
+		UI:SaveSettings()
+		UI:Notify("Saved " .. name, p .. " parts, " .. a .. " accessories", 3)
+	end
+})
+
+Section.NewButton({
+	Text = "Apply OC",
+	Callback = function()
+		local name = OCBox.GetResolved()
+		local snap = name and getOCs()[name]
+		if not snap then
+			UI:Notify("Apply OC", "No saved OC matches", 2)
+			return
+		end
+		local p, a = applySnapshot(snap, true, true)
+		UI:Notify("Applied " .. name, p .. " parts, " .. a .. " accessories", 3)
+	end
+})
+
+Section.NewButton({
+	Text = "Delete OC",
+	Callback = function()
+		local name = OCBox.GetResolved()
+		local ocs = getOCs()
+		if not (name and ocs[name]) then
+			UI:Notify("Delete OC", "No saved OC matches", 2)
+			return
+		end
+		ocs[name] = nil
+		UI:SetSetting("OCs", ocs)
+		UI:SaveSettings()
+		OCBox.SetText("")
+		UI:Notify("Deleted", name, 2)
+	end
+})
+
 local Section = UI:NewSection("Settings")
+
+Default = UI:GetPreset(),
+
+Section.NewButton({
+    Text = "Reset",
+    Callback = function()
+        UI:ClearSettings({ "OCs" })
+        UI:ResetTheme()
+        syncPicker()
+        UI:Notify("Reset", "Settings cleared (OCs kept)", 2)
+    end
+})
+
+Section.NewKeybind({
+    Text = "Toggle UI Key",
+    Default = UI:GetSetting("ToggleKey", "F1"),
+    Changed = function(key) UI:SetToggleKey(key) end,
+})
 
 local ThemeTargets = {
     { "Accent",            "Accent"      },
