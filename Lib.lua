@@ -1007,6 +1007,7 @@ function Library:NewSection(name)
         noResults.Visible     = false
 
         local items = {}
+        local selectBtn
 
         local function paint(item)
             local on = selected[item.opt] == true
@@ -1037,6 +1038,13 @@ function Library:NewSection(name)
             noResults.Visible = searchable and visibleCount == 0
             list.CanvasPosition = Vector2.new(0, 0)
             list.Size = UDim2.new(1, 0, 0, listHeight())
+            noResults.Visible = searchable and visibleCount == 0
+            list.CanvasPosition = Vector2.new(0, 0)
+            list.Size = UDim2.new(1, 0, 0, listHeight())
+
+            if selectBtn then
+                selectBtn.Text = (q == "") and "Select All" or "Select Shown"
+            end
             if isOpen then
                 Tween(dd, TI_FAST, { Size = UDim2.new(1, 0, 0, openHeight()) })
             end
@@ -1077,9 +1085,10 @@ function Library:NewSection(name)
                 b.MouseEnter:Connect(function() Tween(b, TI_FAST, { TextColor3 = Config.Theme.Accent }) end)
                 b.MouseLeave:Connect(function() Tween(b, TI_FAST, { TextColor3 = Config.Theme.TextDim }) end)
                 b.MouseButton1Click:Connect(onClick)
+                return b
             end
 
-            smallButton("Select Shown", 0, 8, function()
+            selectBtn = smallButton("Select All", 0, 8, function()
                 for _, item in ipairs(items) do
                     if item.btn.Visible then
                         selected[item.opt] = true
