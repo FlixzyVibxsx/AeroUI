@@ -201,11 +201,126 @@ local function commit(gui, changes)
     if count == 0 then warn("[AeroUI] theme: nothing was recolored") end
 end
 
-function Library:SetTheme(key, color) commit(self.ScreenGui, { [key] = color }) end
-function Library:GetTheme(key)        return Config.Theme[key] end
-function Library:ApplyPreset(name)    if ThemePresets[name] then commit(self.ScreenGui, ThemePresets[name]) end end
-function Library:ResetTheme()         commit(self.ScreenGui, DefaultTheme) end
-function Library:GetPresetNames()     return table.clone(PresetOrder) end
+-- ===== persistent storage =====
+local HttpService = game:GetService("HttpService")
+
+local Store = { Data = {}, Folder = "AeroUI", Name = "default", Queued = false }
+
+local function fsReady()
+    return typeof(writefile) == "function" and typeof(readfile) == "function"
+       and typeof(isfile) == "function" and typeof(isfolder) == "function"
+       and typeof(makefolder) == "function"
+end
+
+local function storePath()
+    return Store.Folder .. "/" .. Store.Name .. ".json"
+end
+
+local function storeLoad()
+    Store.Data = {}
+    if not fsReady() then return end
+    local ok, raw = pcall(function()
+        if isfile(storePath()) then return readfile(storePath()) end
+    end)
+    if ok and raw then
+        local ok2, data = pcall(function() return HttpService:JSONDecode(raw) end)
+        if ok2 and type(data) == "table" then Store.Data = data end
+    end
+end
+
+local function storeFlush()
+    if not fsReady() then return false end
+    local ok, err = pcall(function()
+        if not isfolder(Store.Folder) then makefolder(Store.Folder) end
+        writefile(storePath(), HttpService:JSONEncode(Store.Data))
+    end)
+    if not ok then warn("[AeroUI] save failed: " .. tostring(err)) end
+    return ok
+end
+
+local function queueSave() -- debounced so dragging a color picker doesn't spam the disk
+    if Store.Queued then return end
+    Store.Queued = true
+    task.delay(1, function()
+        Store.Queued = false
+        storeFlush()
+    end)
+end
+
+local function encodeTheme()
+    local out = {}
+    for _, key in ipairs(THEME_KEYS) do
+        local c = Config.Theme[key]
+        out[key] = { c.R, c.G, c.B }
+    end
+    return out
+end
+
+local function applyStoredTheme()
+    local saved = Store.Data.Theme
+    if type(saved) ~= "table" then return end
+    for _, key in ipairs(THEME_KEYS) do
+        local t = saved[key]
+        if type(t) == "table" and type(t[1]) == "number" and type(t[2]) == "number" and type(t[3]) == "number" then
+            Config.Theme[key] = Color3.new(t[1], t[2], t[3])
+        end
+    end
+    Config.Theme.CloseText = Config.Theme.Accent
+    Config.Theme.Close     = Config.Theme.Primary
+end
+
+local function persistTheme(presetName)
+    Store.Data.Theme  = encodeTheme()
+    Store.Data.Preset = presetName
+    queueSave()
+end
+
+function Library.EncodeColor(c) return { c.R, c.G, c.B } end
+function Library.DecodeColor(t)
+    if type(t) == "table" and type(t[1]) == "number" and type(t[2]) == "number" and type(t[3]) == "number" then
+        return Color3.new(t[1], t[2], t[3])
+    end
+    return nil
+end
+function Library.CanSave() return fsReady() end
+
+function Library:GetSetting(key, default)
+    local s = Store.Data.Settings
+    local v = s and s[key]
+    if v == nil then return default end
+    return v
+end
+function Library:SetSetting(key, value)
+    Store.Data.Settings = Store.Data.Settings or {}
+    Store.Data.Settings[key] = value
+    queueSave()
+end
+function Library:SaveSettings() return storeFlush() end
+function Library:ClearSettings(keep) -- keep = { "OCs" } preserves those keys
+    local old = Store.Data.Settings or {}
+    Store.Data = { Settings = {} }
+    for _, k in ipairs(keep or {}) do Store.Data.Settings[k] = old[k] end
+    storeFlush()
+end
+
+-- ===== theme API (now persistent) =====
+function Library:SetTheme(key, color)
+    commit(self.ScreenGui, { [key] = color })
+    persistTheme("Custom")
+end
+function Library:GetTheme(key)     return Config.Theme[key] end
+function Library:GetPreset()       return Store.Data.Preset or "Default" end
+function Library:ApplyPreset(name)
+    if ThemePresets[name] then
+        commit(self.ScreenGui, ThemePresets[name])
+        persistTheme(name)
+    end
+end
+function Library:ResetTheme()
+    commit(self.ScreenGui, DefaultTheme)
+    persistTheme("Default")
+end
+function Library:GetPresetNames()  return table.clone(PresetOrder) end
 
 local NotifContainer
 local function GetNotifContainer()
@@ -250,7 +365,12 @@ function Library:Notify(title, message, duration)
     end)
 end
 
-function Library.new()
+function Library.new(opts)
+    opts = opts or {}
+    Store.Name = opts.ConfigName or "default"
+    storeLoad()
+    applyStoredTheme()
+
     local self = setmetatable({}, Library)
 
     self.ScreenGui = Instance.new("ScreenGui")
@@ -551,9 +671,15 @@ function Library.new()
     end)
 
     self.ToggleKey = Enum.KeyCode.LeftShift
+    local savedKey = Store.Data.Settings and Store.Data.Settings.ToggleKey
+    if type(savedKey) == "string" then
+        local ok, kc = pcall(function() return Enum.KeyCode[savedKey] end)
+        if ok and kc then self.ToggleKey = kc end
+    end
 
     function self:SetToggleKey(key)
         self.ToggleKey = key
+        Library:SetSetting("ToggleKey", key.Name)
     end
 
     UserInputService.InputBegan:Connect(function(input, gp)
@@ -574,6 +700,7 @@ function Library.new()
 end
 
 function Library:Destroy()
+    storeFlush()
     if self.ScreenGui then self.ScreenGui:Destroy() end
 end
 
@@ -1399,7 +1526,7 @@ function Library:NewSection(name)
             Tween(ddStroke, TI_FAST, { Color = Config.Theme.Edge })
             if enter then
                 local best = bestFor(tb.Text)
-                if best then choose(best) else collapse() end
+                if best and props.SnapOnEnter ~= false then choose(best) else collapse() end
             else
                 task.delay(0.15, function()
                     if not focused then collapse() end
@@ -1535,7 +1662,6 @@ function Library:NewSection(name)
             infoLbl.Text = string.format("ID: %d  •  %d days old", userId, Player.AccountAge)
         end
 
-        -- confirm the name from the user ID
         task.spawn(function()
             local ok, name = pcall(function()
                 return Players:GetNameFromUserIdAsync(userId)
@@ -1608,6 +1734,7 @@ function Library:NewSection(name)
             if isBinding and input.UserInputType == Enum.UserInputType.Keyboard then
                 isBinding = false
                 boundKey = input.KeyCode
+                if props.Changed then props.Changed(boundKey) end
 
                 kbLbl.Text = input.KeyCode.Name
                 kbLbl.TextColor3 = Config.Theme.TextDim
@@ -1647,7 +1774,6 @@ function Library:NewSection(name)
 
         Label(row, { Text = props.Text or "Color", Size = 13, Pos = UDim2.new(0, 12, 0, 4), FrameSize = UDim2.new(0.6, 0, 0, 18) })
 
-        -- preview swatch
         local swatch = Raw(Instance.new("Frame"))
         swatch.BorderSizePixel  = 0
         swatch.BackgroundColor3 = color
@@ -1657,7 +1783,6 @@ function Library:NewSection(name)
         Corner(swatch, 4)
         Stroke(swatch, Config.Theme.Edge, 1)
 
-        -- saturation / brightness square
         local sv = Raw(Instance.new("Frame"))
         sv.BorderSizePixel  = 0
         sv.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
@@ -1673,7 +1798,7 @@ function Library:NewSection(name)
         white.Parent           = sv
         Corner(white, 5)
         local wg = Instance.new("UIGradient")
-        wg.Transparency = NumberSequence.new(0, 1)      -- left: opaque white -> right: clear
+        wg.Transparency = NumberSequence.new(0, 1)
         wg.Parent = white
 
         local black = Raw(Instance.new("Frame"))
@@ -1684,7 +1809,7 @@ function Library:NewSection(name)
         Corner(black, 5)
         local bg = Instance.new("UIGradient")
         bg.Rotation     = 90
-        bg.Transparency = NumberSequence.new(1, 0)      -- top: clear -> bottom: opaque black
+        bg.Transparency = NumberSequence.new(1, 0)
         bg.Parent = black
 
         local svCur = Instance.new("Frame")
@@ -1703,7 +1828,6 @@ function Library:NewSection(name)
         svHit.Active = true
         svHit.Parent = sv
 
-        -- hue bar
         local hue = Raw(Instance.new("Frame"))
         hue.BorderSizePixel  = 0
         hue.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -1736,7 +1860,6 @@ function Library:NewSection(name)
         hueHit.Active = true
         hueHit.Parent = hue
 
-        -- R / G / B / HEX boxes
         local boxes = Instance.new("Frame")
         boxes.BackgroundTransparency = 1
         boxes.Size     = UDim2.new(1, -18, 0, 22)
@@ -1783,7 +1906,6 @@ function Library:NewSection(name)
         local boxB = makeBox(0.4, 0.2, "B")
         local boxH = makeBox(0.6, 0.4, "HEX")
 
-        -- state / rendering
         local function render()
             sv.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
             svCur.Position      = UDim2.new(s, 0, 1 - v, 0)
@@ -1811,7 +1933,7 @@ function Library:NewSection(name)
         local function fromColor(c, shouldEmit)
             color = c
             local nh, ns, nv = c:ToHSV()
-            if ns > 0 and nv > 0 then h = nh end -- keep hue when the color is grey/black
+            if ns > 0 and nv > 0 then h = nh end
             s, v = ns, nv
             render()
             if shouldEmit then emit() end
@@ -1852,7 +1974,6 @@ function Library:NewSection(name)
             if isPress(i) then dragMode = nil end
         end)
 
-        -- typed input
         local function channel(tb, current)
             local n = tonumber(tb.Text)
             if n then return math.clamp(math.floor(n + 0.5), 0, 255) end
@@ -1873,14 +1994,14 @@ function Library:NewSection(name)
                     tonumber(hex:sub(5, 6), 16)
                 ), true)
             else
-                render() -- invalid hex: restore the previous value
+                render()
             end
         end)
 
         render()
 
         local obj = { Row = row }
-        function obj.SetColor(c) fromColor(c, false) end  -- no callback, safe to call from code
+        function obj.SetColor(c) fromColor(c, false) end
         function obj.GetColor() return color end
         return obj
     end
