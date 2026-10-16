@@ -5,7 +5,7 @@
 
 	Free open source
 
-	Version Number: 1.0.6
+	Version Number: 1.0.8
 ]]--
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/FlixzyVibxsx/AeroUI/refs/heads/main/Lib.lua"))()
@@ -16,11 +16,16 @@ UI:SetToggleKey(Enum.KeyCode.F1)
 UI:Notify("Welcome", "Aero UI Loaded Successfully", 3)
 
 local Section = UI:NewSection("Credits")
+
+Section.NewProfile({
+    Title = "Welcome to Aero UI",
+})
+
 Section.NewParagraph({
     "Made by rFlixzypoo",
     "Assets from q_ow2",
     "Free and Open Source",
-    "Version: 1.0.6",
+    "Version: 1.0.8",
     "Flixz is a simp for his girlfriend <3",
 })
 
@@ -67,8 +72,8 @@ local PartOptions    = { "EyeColor1", "EyeColor2", "Pupil1", "Pupil2", "White1",
 	"Hip", "HipSecondary", "RightShoulder", "RightArm", "RightLowerArm", "DragonFoot1", "LeftShoulder", "LeftArm", "LeftLowerArm",
 	"DragonFoot2", "RightThigh", "RightLeg", "RightLowerLeg", "DragonFoot3", "LegFluff1", "LeftThigh", "LeftLeg", "LeftLowerLeg", 
 	"DragonFoot4", "LegFluff2", "Tail1", "Tail2", "Tail3", "Tail5", "TailFluff1", "TailFluff2", "TailFluff3", "TailFluff4", 
-	"DragonTip", "OceanTailPrimary", "OceanFin", "DragonSpike7", "DragonSpike8", "DragonSpike9", "DragonSpike10", "DragonClaws1",
-	"DragonClaws2", "DragonClaws3", "DragonClaws4", "DragonDewClaw1", "DragonDewClaw2", "DragonWingL1", "DragonWingL2", "DragonWingL3",
+	"DragonTip", "OceanTailPrimary", "OceanFin", "DragonSpike7", "DragonSpike8", "DragonSpike9", "DragonSpike10", "DragonClaw1",
+	"DragonClaw2", "DragonClaw3", "DragonClaw4", "DragonDewClaw1", "DragonDewClaw2", "DragonWingL1", "DragonWingL2", "DragonWingL3",
 	"DragonWingL4", "DragonWingL5", "DragonWingR1", "DragonWingR2", "DragonWingR3", "DragonWingR4", "DragonWingR5", "DragonLSkin1", 
 	"DragonLSkin2", "DragonLSkin3", "DragonLSkin4", "DragonRSkin1", "DragonRSkin2", "DragonRSkin3", "DragonRSkin4", "DragonWingLDew",
 	"DragonWingRDew", "LeftWingStart", "RightWingStart", "DragonHornBig1", "DragonHornBig2", "DragonHornSmall1-1", "DragonHornSmall1-2",
