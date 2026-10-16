@@ -1222,6 +1222,198 @@ function Library:NewSection(name)
         return row
     end
 
+    function section.NewAutoTextBox(props)
+        props = props or {}
+        local headerH  = 32
+        local itemH    = 26
+        local maxShown = props.MaxSuggestions or 5
+        local focused, suppress = false, false
+
+        local dd = Instance.new("Frame")
+        dd.BackgroundColor3 = Config.Theme.Elevated
+        dd.BorderSizePixel  = 0
+        dd.Size             = UDim2.new(1, 0, 0, headerH)
+        dd.ClipsDescendants = true
+        dd.LayoutOrder      = nextOrder()
+        dd.Name             = "AutoTextBox"
+        dd.Parent           = scroll
+        Corner(dd, 7)
+        local ddStroke = Stroke(dd, Config.Theme.Edge, 1)
+
+        Label(dd, { Text = props.Text or "Name", Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 12, 0, 0), FrameSize = UDim2.new(0.45, 0, 0, headerH) })
+
+        local tbBg = Instance.new("Frame")
+        tbBg.BackgroundColor3 = Config.Theme.Secondary
+        tbBg.BorderSizePixel  = 0
+        tbBg.Size             = UDim2.new(0.5, -12, 0, 22)
+        tbBg.Position         = UDim2.new(0.5, 0, 0, 5)
+        tbBg.Parent           = dd
+        Corner(tbBg, 5)
+        local tbStroke = Stroke(tbBg, Config.Theme.Edge, 1)
+
+        local tb = Instance.new("TextBox")
+        tb.BackgroundTransparency = 1
+        tb.Text              = props.Default or ""
+        tb.TextColor3        = Config.Theme.Text
+        tb.TextSize          = 12
+        tb.Font              = Enum.Font.Gotham
+        tb.Size              = UDim2.new(1, -10, 1, 0)
+        tb.Position          = UDim2.new(0, 5, 0, 0)
+        tb.PlaceholderText   = props.Placeholder or "Type a name..."
+        tb.PlaceholderColor3 = Config.Theme.TextDim
+        tb.ClearTextOnFocus  = false
+        tb.TextXAlignment    = Enum.TextXAlignment.Left
+        tb.Parent            = tbBg
+
+        local sugg = Instance.new("Frame")
+        sugg.BackgroundTransparency = 1
+        sugg.BorderSizePixel = 0
+        sugg.Position = UDim2.new(0, 0, 0, headerH + 2)
+        sugg.Size     = UDim2.new(1, 0, 0, 0)
+        sugg.Parent   = dd
+
+        -- matching: exact > prefix > substring > letters-in-order
+        local function trim(s)
+            return (string.gsub(s, "^%s*(.-)%s*$", "%1"))
+        end
+
+        local function rank(name, q)
+            local n = string.lower(name)
+            if n == q then return 0 end
+            if string.sub(n, 1, #q) == q then return 1 end
+            if string.find(n, q, 1, true) then return 2 end
+            local pos = 1
+            for i = 1, #q do
+                local f = string.find(n, string.sub(q, i, i), pos, true)
+                if not f then return nil end
+                pos = f + 1
+            end
+            return 3
+        end
+
+        local function matches(text)
+            local q = string.lower(trim(text))
+            local opts = props.GetOptions and props.GetOptions() or {}
+            local found = {}
+            for _, name in ipairs(opts) do
+                if q == "" then
+                    table.insert(found, { name = name, r = 0 })
+                else
+                    local r = rank(name, q)
+                    if r then table.insert(found, { name = name, r = r }) end
+                end
+            end
+            table.sort(found, function(a, b)
+                if a.r ~= b.r then return a.r < b.r end
+                if #a.name ~= #b.name then return #a.name < #b.name end
+                return string.lower(a.name) < string.lower(b.name)
+            end)
+            local out = {}
+            for i = 1, math.min(#found, maxShown) do out[i] = found[i].name end
+            return out
+        end
+
+        local function bestFor(text)
+            if trim(text) == "" then return nil end
+            return matches(text)[1]
+        end
+
+        local function clearSugg()
+            for _, c in ipairs(sugg:GetChildren()) do c:Destroy() end
+        end
+
+        local function collapse()
+            clearSugg()
+            sugg.Size = UDim2.new(1, 0, 0, 0)
+            Tween(dd, TI_FAST, { Size = UDim2.new(1, 0, 0, headerH) })
+        end
+
+        local choose
+
+        local function render()
+            clearSugg()
+            local list = matches(tb.Text)
+            for i, name in ipairs(list) do
+                local restT = (i == 1 and trim(tb.Text) ~= "") and 0.85 or 1
+                local b = Instance.new("TextButton")
+                b.BackgroundColor3       = Config.Theme.Elevated
+                b.BackgroundTransparency = restT
+                b.BorderSizePixel        = 0
+                b.Size                   = UDim2.new(1, 0, 0, itemH)
+                b.Position               = UDim2.new(0, 0, 0, (i - 1) * itemH)
+                b.Text                   = name
+                b.TextColor3             = restT < 1 and Config.Theme.Text or Config.Theme.TextDim
+                b.TextSize               = 12
+                b.Font                   = Enum.Font.Gotham
+                b.TextXAlignment         = Enum.TextXAlignment.Left
+                b.Parent                 = sugg
+                local p = Instance.new("UIPadding"); p.PaddingLeft = UDim.new(0, 14); p.Parent = b
+
+                b.MouseEnter:Connect(function()
+                    Tween(b, TI_FAST, { BackgroundTransparency = 0.7, TextColor3 = Config.Theme.Text })
+                end)
+                b.MouseLeave:Connect(function()
+                    Tween(b, TI_FAST, {
+                        BackgroundTransparency = restT,
+                        TextColor3 = restT < 1 and Config.Theme.Text or Config.Theme.TextDim,
+                    })
+                end)
+                -- Down (not Click) so it still registers when the TextBox loses focus
+                b.MouseButton1Down:Connect(function() choose(name) end)
+            end
+            sugg.Size = UDim2.new(1, 0, 0, #list * itemH)
+            Tween(dd, TI_FAST, { Size = UDim2.new(1, 0, 0, headerH + (#list > 0 and (#list * itemH + 6) or 0)) })
+        end
+
+        choose = function(name)
+            suppress = true
+            tb.Text = name
+            suppress = false
+            collapse()
+            if props.Callback then props.Callback(name) end
+        end
+
+        tb.Focused:Connect(function()
+            focused = true
+            Tween(tbStroke, TI_FAST, { Color = Config.Theme.Accent, Thickness = 1.5 })
+            Tween(ddStroke, TI_FAST, { Color = Config.Theme.Accent })
+            render()
+        end)
+
+        tb:GetPropertyChangedSignal("Text"):Connect(function()
+            if focused and not suppress then render() end
+        end)
+
+        tb.FocusLost:Connect(function(enter)
+            focused = false
+            Tween(tbStroke, TI_FAST, { Color = Config.Theme.Edge, Thickness = 1 })
+            Tween(ddStroke, TI_FAST, { Color = Config.Theme.Edge })
+            if enter then
+                local best = bestFor(tb.Text)
+                if best then choose(best) else collapse() end
+            else
+                task.delay(0.15, function()
+                    if not focused then collapse() end
+                end)
+            end
+        end)
+
+        local obj = { Row = dd }
+        function obj.GetText() return tb.Text end
+        function obj.SetText(t)
+            suppress = true; tb.Text = t; suppress = false
+        end
+        -- snaps the box to the closest match and returns it (nil if nothing matches)
+        function obj.GetResolved()
+            local best = bestFor(tb.Text)
+            if best then
+                suppress = true; tb.Text = best; suppress = false
+            end
+            return best
+        end
+        return obj
+    end
+
     function section.NewLabel(props)
         if type(props) == "string" then
             props = { Text = props }
