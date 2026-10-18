@@ -26,7 +26,7 @@ local Config = {
         CloseText  = Color3.fromRGB(110, 100, 255),
     },
     Size  = UDim2.new(0, 380, 0, 480),
-    Title = "Aero UI Library | I love my girlfriend <3",
+    Title = "Aero UI Library | I love my girlfriend <333",
 }
 
 local TI_FAST   = TweenInfo.new(0.18, Enum.EasingStyle.Quint)
@@ -202,7 +202,6 @@ local function commit(gui, changes)
     if count == 0 then warn("[AeroUI] theme: nothing was recolored") end
 end
 
--- ===== persistent storage =====
 local Store = { Data = {}, Folder = "AeroUI", Name = "default", Queued = false }
 
 local function fsReady()
@@ -237,7 +236,7 @@ local function storeFlush()
     return ok
 end
 
-local function queueSave() -- debounced so dragging a color picker doesn't spam the disk
+local function queueSave()
     if Store.Queued then return end
     Store.Queued = true
     task.delay(1, function()
@@ -295,14 +294,13 @@ function Library:SetSetting(key, value)
     queueSave()
 end
 function Library:SaveSettings() return storeFlush() end
-function Library:ClearSettings(keep) -- keep = { "OCs" } preserves those keys
+function Library:ClearSettings(keep)
     local old = Store.Data.Settings or {}
     Store.Data = { Settings = {} }
     for _, k in ipairs(keep or {}) do Store.Data.Settings[k] = old[k] end
     storeFlush()
 end
 
--- ===== theme API (persistent) =====
 function Library:SetTheme(key, color)
     commit(self.ScreenGui, { [key] = color })
     persistTheme("Custom")
@@ -378,6 +376,53 @@ function Library.new(opts)
     self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.ScreenGui.Parent         = PARENT
     TrackTheme(self.ScreenGui)
+
+    -- Bottom-left credits popup (dismissed with Continue).
+    local credits = Instance.new("Frame")
+    credits.Name = "CreditsPopup"
+    credits.AnchorPoint = Vector2.new(0, 1)
+    credits.Position = UDim2.new(0, 12, 1, -12)
+    credits.Size = UDim2.new(0, 260, 0, 146)
+    credits.BackgroundColor3 = Color3.fromRGB(54, 39, 49)
+    credits.BorderSizePixel = 0
+    credits.ZIndex = 50
+    credits.Parent = self.ScreenGui
+    Corner(credits, 8)
+    Stroke(credits, Color3.fromRGB(130, 78, 105), 1)
+
+    local creditsText = Instance.new("TextLabel")
+    creditsText.Name = "CreditsText"
+    creditsText.BackgroundTransparency = 1
+    creditsText.Position = UDim2.new(0, 10, 0, 7)
+    creditsText.Size = UDim2.new(1, -20, 0, 96)
+    creditsText.Font = Enum.Font.Gotham
+    creditsText.Text = "Made by rFlixzypoo\nAssets from q_ow2\nFree and Open Source\nVersion: 1.1.0\nFlixz is a simp for his girlfriend <3"
+    creditsText.TextColor3 = Color3.fromRGB(245, 239, 243)
+    creditsText.TextSize = 12
+    creditsText.TextXAlignment = Enum.TextXAlignment.Left
+    creditsText.TextYAlignment = Enum.TextYAlignment.Top
+    creditsText.TextWrapped = true
+    creditsText.ZIndex = 51
+    creditsText.Parent = credits
+
+    local continueButton = Instance.new("TextButton")
+    continueButton.Name = "ContinueButton"
+    continueButton.AnchorPoint = Vector2.new(1, 1)
+    continueButton.Position = UDim2.new(1, -9, 1, -8)
+    continueButton.Size = UDim2.new(0, 82, 0, 27)
+    continueButton.BackgroundColor3 = Color3.fromRGB(130, 78, 105)
+    continueButton.BorderSizePixel = 0
+    continueButton.Font = Enum.Font.GothamMedium
+    continueButton.Text = "Continue"
+    continueButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    continueButton.TextSize = 12
+    continueButton.AutoButtonColor = true
+    continueButton.ZIndex = 51
+    continueButton.Parent = credits
+    Corner(continueButton, 5)
+    continueButton.Activated:Connect(function()
+        credits:Destroy()
+    end)
 
     local glowRing = Instance.new("Frame")
     glowRing.BackgroundTransparency = 1
@@ -504,25 +549,60 @@ function Library.new(opts)
     local minH = Config.Size.Y.Offset
     local resizing = false
 
+    -- Bottom-right resize grip (diagonal icon instead of a solid square)
     local resizeHandle = Instance.new("Frame")
     resizeHandle.Name = "ResizeHandle"
-    resizeHandle.BackgroundColor3 = Config.Theme.Accent
-    resizeHandle.BackgroundTransparency = 0.15
+    resizeHandle.BackgroundTransparency = 1
     resizeHandle.BorderSizePixel = 0
-    resizeHandle.Size = UDim2.new(0, 16, 0, 16)
-    resizeHandle.Position = UDim2.new(1, -18, 1, -18)
-    resizeHandle.ZIndex = 5
+    resizeHandle.Size = UDim2.new(0, 24, 0, 24)
+    resizeHandle.Position = UDim2.new(1, -24, 1, -24)
+    resizeHandle.ZIndex = 20
     resizeHandle.Parent = self.Window
-    Corner(resizeHandle, 4)
-    Stroke(resizeHandle, Config.Theme.Edge, 1)
+
+    -- Three diagonal grip lines
+    for i = 1, 3 do
+        local gripLine = Instance.new("Frame")
+        gripLine.Name = "GripLine" .. i
+        gripLine.AnchorPoint = Vector2.new(0.5, 0.5)
+        gripLine.BackgroundColor3 = Config.Theme.Accent
+        gripLine.BackgroundTransparency = 0.05
+        gripLine.BorderSizePixel = 0
+        gripLine.Size = UDim2.new(0, 2, 0, 6 + i * 3)
+        gripLine.Position = UDim2.new(1, - (4 + (i - 1) * 5), 1, - (4 + (i - 1) * 5))
+        gripLine.Rotation = 45
+        gripLine.ZIndex = 21
+        gripLine.Parent = resizeHandle
+        Corner(gripLine, 1)
+    end
 
     local resizeBtn = Instance.new("TextButton")
+    resizeBtn.Name = "ResizeButton"
     resizeBtn.BackgroundTransparency = 1
+    resizeBtn.BorderSizePixel = 0
     resizeBtn.Size = UDim2.new(1, 0, 1, 0)
+    resizeBtn.Position = UDim2.new(0, 0, 0, 0)
     resizeBtn.Text = ""
+    resizeBtn.AutoButtonColor = false
+    resizeBtn.Active = true
+    resizeBtn.ZIndex = 22
     resizeBtn.Parent = resizeHandle
 
     local resizeStartMouse, resizeStartSize
+
+    resizeBtn.MouseEnter:Connect(function()
+        for _, child in ipairs(resizeHandle:GetChildren()) do
+            if child:IsA("Frame") and child.Name:match("^GripLine") then
+                Tween(child, TI_FAST, { BackgroundColor3 = Config.Theme.AccentHover })
+            end
+        end
+    end)
+    resizeBtn.MouseLeave:Connect(function()
+        for _, child in ipairs(resizeHandle:GetChildren()) do
+            if child:IsA("Frame") and child.Name:match("^GripLine") then
+                Tween(child, TI_FAST, { BackgroundColor3 = Config.Theme.Accent })
+            end
+        end
+    end)
 
     resizeBtn.MouseButton1Down:Connect(function()
         resizing = true
@@ -547,7 +627,7 @@ function Library.new(opts)
             local newH = math.max(minH, resizeStartSize.Y.Offset + deltaY)
 
             self.Window.Size = UDim2.new(0, newW, 0, newH)
-            glowRing.Size    = UDim2.new(0, newW, 0, newH)
+            glowRing.Size = UDim2.new(0, newW, 0, newH)
         end
     end)
 
@@ -669,7 +749,6 @@ function Library.new(opts)
         setMinimized(not self.IsMinimized)
     end)
 
-    -- toggle key (restored from saved settings when available)
     self.ToggleKey = Enum.KeyCode.LeftShift
     local savedKey = Store.Data.Settings and Store.Data.Settings.ToggleKey
     if type(savedKey) == "string" then
@@ -705,6 +784,10 @@ end
 
 function Library:NewSection(name)
     local section = {}
+    self._lastSection = section
+    if string.lower(tostring(name or "")) == "main" then
+        self._mainSection = section
+    end
 
     local tabBtn = Instance.new("TextButton")
     tabBtn.BackgroundColor3       = Color3.fromRGB(0,0,0)
@@ -1017,7 +1100,6 @@ function Library:NewSection(name)
         local multi    = props.Multi == true
         local isOpen   = false
 
-        -- drop duplicate options
         local options, seen = {}, {}
         for _, opt in ipairs(props.Options or {}) do
             if not seen[opt] then
@@ -1026,11 +1108,9 @@ function Library:NewSection(name)
             end
         end
 
-        -- search box shows automatically for long lists; override with Searchable = true/false
         local searchable = props.Searchable
         if searchable == nil then searchable = #options > 8 end
 
-        -- multi-select state
         local selected = {}
         if multi then
             local d = props.Default
@@ -1056,7 +1136,6 @@ function Library:NewSection(name)
             return #picked .. " selected"
         end
 
-        -- vertical layout: header, [search], [multi buttons], list
         local y = headerH + 1
         local searchY, btnY
         if searchable then searchY = y + 5; y = y + 32 end
@@ -1093,7 +1172,6 @@ function Library:NewSection(name)
         sep.Position         = UDim2.new(0, 12, 0, headerH)
         sep.Parent           = dd
 
-        -- search box
         local searchBox
         if searchable then
             local sbBg = Instance.new("Frame")
@@ -1127,7 +1205,6 @@ function Library:NewSection(name)
             end)
         end
 
-        -- scrolling option list
         local list = Instance.new("ScrollingFrame")
         list.BackgroundTransparency = 1
         list.BorderSizePixel        = 0
@@ -1209,7 +1286,6 @@ function Library:NewSection(name)
             })
         end
 
-        -- "Select All / Select Shown" and "Clear" buttons (multi only)
         if multi then
             local function smallButton(text, xScale, xOff, onClick)
                 local b = Instance.new("TextButton")
@@ -1424,7 +1500,6 @@ function Library:NewSection(name)
         sugg.Size     = UDim2.new(1, 0, 0, 0)
         sugg.Parent   = dd
 
-        -- matching: exact > prefix > substring > letters-in-order
         local function trim(s)
             return (string.gsub(s, "^%s*(.-)%s*$", "%1"))
         end
@@ -1510,7 +1585,7 @@ function Library:NewSection(name)
                         TextColor3 = restT < 1 and Config.Theme.Text or Config.Theme.TextDim,
                     })
                 end)
-                -- Down (not Click) so it still registers when the TextBox loses focus
+
                 b.MouseButton1Down:Connect(function() choose(name) end)
             end
             sugg.Size = UDim2.new(1, 0, 0, #list * itemH)
@@ -1555,7 +1630,7 @@ function Library:NewSection(name)
         function obj.SetText(t)
             suppress = true; tb.Text = t; suppress = false
         end
-        -- snaps the box to the closest match and returns it (nil if nothing matches)
+
         function obj.GetResolved()
             local best = bestFor(tb.Text)
             if best then
@@ -1590,7 +1665,6 @@ function Library:NewSection(name)
     end
 
     function section.NewParagraph(props)
-        -- accepts a string, or a table of lines
         if type(props) == "string" then
             props = { Text = props }
         elseif type(props) == "table" and props.Text == nil then
@@ -1601,7 +1675,7 @@ function Library:NewSection(name)
         local row = makeRow(0)
         row.AutomaticSize = Enum.AutomaticSize.Y
         row.Size = UDim2.new(1, 0, 0, 0)
-        Stroke(row, Config.Theme.Edge, 1) -- static border, no hover glow
+        Stroke(row, Config.Theme.Edge, 1)
 
         local pad = Instance.new("UIPadding")
         pad.PaddingTop    = UDim.new(0, 8)
@@ -1637,7 +1711,6 @@ function Library:NewSection(name)
         local row = makeRow(80)
         Stroke(row, Config.Theme.Edge, 1)
 
-        -- avatar
         local avatarBg = Instance.new("Frame")
         avatarBg.BackgroundColor3 = Config.Theme.Secondary
         avatarBg.BorderSizePixel  = 0
@@ -1656,7 +1729,6 @@ function Library:NewSection(name)
         avatar.Parent          = avatarBg
         Corner(avatar, 10)
 
-        -- text lines (scaled so long names never overflow the card)
         local function line(text, color, maxSize, font, y, h)
             local l = Label(row, {
                 Text = text, Color = color, Size = maxSize,
@@ -1679,7 +1751,6 @@ function Library:NewSection(name)
             infoLbl.Text = string.format("ID: %d  •  %d days old", userId, Player.AccountAge)
         end
 
-        -- confirm the name from the user ID
         task.spawn(function()
             local ok, name = pcall(function()
                 return Players:GetNameFromUserIdAsync(userId)
@@ -1794,7 +1865,6 @@ function Library:NewSection(name)
 
         Label(row, { Text = props.Text or "Color", Size = 13, Pos = UDim2.new(0, 12, 0, 4), FrameSize = UDim2.new(0.6, 0, 0, 18) })
 
-        -- preview swatch
         local swatch = Raw(Instance.new("Frame"))
         swatch.BorderSizePixel  = 0
         swatch.BackgroundColor3 = color
@@ -1804,7 +1874,6 @@ function Library:NewSection(name)
         Corner(swatch, 4)
         Stroke(swatch, Config.Theme.Edge, 1)
 
-        -- saturation / brightness square
         local sv = Raw(Instance.new("Frame"))
         sv.BorderSizePixel  = 0
         sv.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
@@ -1820,7 +1889,7 @@ function Library:NewSection(name)
         white.Parent           = sv
         Corner(white, 5)
         local wg = Instance.new("UIGradient")
-        wg.Transparency = NumberSequence.new(0, 1)      -- left: opaque white -> right: clear
+        wg.Transparency = NumberSequence.new(0, 1)
         wg.Parent = white
 
         local black = Raw(Instance.new("Frame"))
@@ -1831,7 +1900,7 @@ function Library:NewSection(name)
         Corner(black, 5)
         local bg = Instance.new("UIGradient")
         bg.Rotation     = 90
-        bg.Transparency = NumberSequence.new(1, 0)      -- top: clear -> bottom: opaque black
+        bg.Transparency = NumberSequence.new(1, 0)
         bg.Parent = black
 
         local svCur = Instance.new("Frame")
@@ -1850,7 +1919,6 @@ function Library:NewSection(name)
         svHit.Active = true
         svHit.Parent = sv
 
-        -- hue bar
         local hue = Raw(Instance.new("Frame"))
         hue.BorderSizePixel  = 0
         hue.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -1883,7 +1951,6 @@ function Library:NewSection(name)
         hueHit.Active = true
         hueHit.Parent = hue
 
-        -- R / G / B / HEX boxes
         local boxes = Instance.new("Frame")
         boxes.BackgroundTransparency = 1
         boxes.Size     = UDim2.new(1, -18, 0, 22)
@@ -1930,7 +1997,6 @@ function Library:NewSection(name)
         local boxB = makeBox(0.4, 0.2, "B")
         local boxH = makeBox(0.6, 0.4, "HEX")
 
-        -- state / rendering
         local function render()
             sv.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
             svCur.Position      = UDim2.new(s, 0, 1 - v, 0)
@@ -1958,13 +2024,12 @@ function Library:NewSection(name)
         local function fromColor(c, shouldEmit)
             color = c
             local nh, ns, nv = c:ToHSV()
-            if ns > 0 and nv > 0 then h = nh end -- keep hue when the color is grey/black
+            if ns > 0 and nv > 0 then h = nh end
             s, v = ns, nv
             render()
             if shouldEmit then emit() end
         end
 
-        -- dragging
         local dragMode = nil
         local function updateSV(pos)
             local ap, as = sv.AbsolutePosition, sv.AbsoluteSize
@@ -1999,7 +2064,6 @@ function Library:NewSection(name)
             if isPress(i) then dragMode = nil end
         end)
 
-        -- typed input
         local function channel(tb, current)
             local n = tonumber(tb.Text)
             if n then return math.clamp(math.floor(n + 0.5), 0, 255) end
@@ -2020,16 +2084,35 @@ function Library:NewSection(name)
                     tonumber(hex:sub(5, 6), 16)
                 ), true)
             else
-                render() -- invalid hex: restore the previous value
+                render()
             end
         end)
 
         render()
 
         local obj = { Row = row }
-        function obj.SetColor(c) fromColor(c, false) end  -- no callback, safe to call from code
+        function obj.SetColor(c) fromColor(c, false) end
         function obj.GetColor() return color end
         return obj
+    end
+
+    -- Controls work from both the section (Main.NewButton) and the UI object
+    -- (UI.NewButton). Direct UI calls prefer the section named "Main"; if it
+    -- does not exist, they use the latest section created.
+    local directControls = {
+        "NewButton", "NewToggle", "NewSlider", "NewDropdown",
+        "NewTextBox", "NewAutoTextBox", "NewLabel", "NewParagraph",
+        "NewProfile", "NewKeybind", "NewColorPicker",
+    }
+
+    for _, methodName in ipairs(directControls) do
+        self[methodName] = function(first, second)
+            local target = self._mainSection or self._lastSection
+            assert(target, "Create a section with UI:NewSection('Main') before adding controls")
+            -- Accept both UI.NewButton(props) and UI:NewButton(props).
+            local props = (second ~= nil) and second or first
+            return target[methodName](props or {})
+        end
     end
 
     return section
