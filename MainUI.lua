@@ -6,42 +6,100 @@
 	Free open source
 
 	Version Number: 1.1.0
+
+	NOTE: the library below must be the NEW AeroUI_Lib.lua (host it at the same
+	GitHub path, or test locally with:  loadstring(readfile("AeroUI_Lib.lua"))())
 ]]--
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/FlixzyVibxsx/AeroUI/refs/heads/main/Lib.lua"))()
 
 local UI = Library.new({ ConfigName = "WolvesLife3" })
 if not UI:GetSetting("ToggleKey") then
-    UI:SetToggleKey(Enum.KeyCode.F1)
+	UI:SetToggleKey(Enum.KeyCode.F1)   -- first-run default
 end
 UI:Notify("Welcome", "Aero UI Loaded Successfully", 3)
 if not Library.CanSave() then
-    UI:Notify("Storage", "Executor can't save files - settings won't persist", 4)
+	UI:Notify("Storage", "Executor can't save files - settings won't persist", 4)
 end
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService        = game:GetService("RunService")
+local TweenService      = game:GetService("TweenService")
+local MaterialService   = game:GetService("MaterialService")
+local LocalPlayer       = game:GetService("Players").LocalPlayer
+
+------------------------------------------------------------------------
+-- DATA LISTS
+------------------------------------------------------------------------
+
+-- list order = accessory ID (1..44)
+local AccessoryNames = {
+	"Slider Bracelets", "Cross Bracelets", "Leaves", "Winter Boots", "Double Bracelets", "Curly", "Punk",
+	"Lonely Woof", "Swiped Back", "Braided", "Long", "Ewooftional", "Long Straight", "Bed Head", "Short Spiky",
+	"Long Spiky", "Spiky Punk", "Spiky", "Emo-Punk", "Sidecut", "Scene", "Extreme-Edge", "Long Sidecut",
+	"Right Ear Piercing", "Left Ear Piercing", "Septum", "Eyebrow Piercing", "Snake Bites", "Guitar", "Swords",
+	"Cape", "Medic", "Flowers", "Rope", "Ripped Shirt", "Bags", "Sword Set 1", "Sword Set 2", "Sword 1", "Sword 2",
+	"Chains", "LeavesBack", "Backpack", "Scars",
+}
+
+local PartOptions = {
+	"EyeColor1", "EyeColor2", "Pupil1", "Pupil2", "White1", "White2", "Lash1", "Lash2", "Head", "Cheeks", "Muzzle",
+	"Eyebrow1", "Eyebrow2", "EyeLid", "Nose", "Jaw", "Gum", "Toungue1", "Toungue2", "NeckSecondary", "Torso",
+	"TorsoSecondary", "Hip", "HipSecondary", "RightShoulder", "RightArm", "RightLowerArm", "DragonFoot1",
+	"LeftShoulder", "LeftArm", "LeftLowerArm", "DragonFoot2", "RightThigh", "RightLeg", "RightLowerLeg",
+	"DragonFoot3", "LegFluff1", "LeftThigh", "LeftLeg", "LeftLowerLeg", "DragonFoot4", "LegFluff2",
+	"Tail1", "Tail2", "Tail3", "Tail5", "TailFluff1", "TailFluff2", "TailFluff3", "TailFluff4",
+	"DragonTip", "OceanTailPrimary", "OceanFin",
+	"DragonSpike1", "DragonSpike2", "DragonSpike3", "DragonSpike4", "DragonSpike5", "DragonSpike6",
+	"DragonSpike7", "DragonSpike8", "DragonSpike9", "DragonSpike10",
+	"DragonClaw1", "DragonClaw2", "DragonClaw3", "DragonClaw4", "DragonDewClaw1", "DragonDewClaw2",
+	"DragonWingL1", "DragonWingL2", "DragonWingL3", "DragonWingL4", "DragonWingL5",
+	"DragonWingR1", "DragonWingR2", "DragonWingR3", "DragonWingR4", "DragonWingR5",
+	"DragonLSkin1", "DragonLSkin2", "DragonLSkin3", "DragonLSkin4",
+	"DragonRSkin1", "DragonRSkin2", "DragonRSkin3", "DragonRSkin4",
+	"DragonWingLDew", "DragonWingRDew", "LeftWingStart", "RightWingStart",
+	"DragonHornBig1", "DragonHornBig2", "DragonHornSmall1-1", "DragonHornSmall1-2",
+	"DragonHornSmall2-1", "DragonHornSmall2-2", "DragonHornTop1", "DragonHornTop2", "DragonHornTop3",
+	"LeftWing2", "LeftWing3", "RightWing2", "RightWing3",
+	"Ocean1Primary", "Ocean1Secondary", "Ocean2Primary", "Ocean2Secondary",
+	"OceanTailSecondary", "OceanDot1", "OceanDot2", "OceanDot3", "OceanDot4",
+	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3",
+}
+
+-- every Roblox material, straight from the enum
+local MaterialOptions = {}
+for _, m in ipairs(Enum.Material:GetEnumItems()) do
+	if m.Name ~= "Air" then table.insert(MaterialOptions, m.Name) end
+end
+table.sort(MaterialOptions)
+
+------------------------------------------------------------------------
+-- CREDITS
+------------------------------------------------------------------------
 local Section = UI:NewSection("Credits")
 
 Section.NewProfile({
-    Title = "Welcome to Aero UI",
+	Title = "Welcome to Aero UI",
 })
 
 Section.NewParagraph({
-    "Made by rFlixzypoo",
-    "Assets from q_ow2",
-    "Free and Open Source",
-    "Version: 1.1.0",
-    "Flixz is a simp for his girlfriend <3",
+	"Made by rFlixzypoo",
+	"Assets from q_ow2",
+	"Free and Open Source",
+	"Version: 1.1.0",
+	"Flixz is a simp for his girlfriend <3",
 })
 
+------------------------------------------------------------------------
+-- MAIN FUNCTIONS
+------------------------------------------------------------------------
 local Section = UI:NewSection("Main Functions")
 
 Section.NewButton({
 	Text = "Rejoin",
 	Callback = function()
 		local TeleportService = game:GetService("TeleportService")
-		local Players = game:GetService("Players")
-		local player = Players.LocalPlayer
-		TeleportService:Teleport(game.PlaceId, player)
+		TeleportService:Teleport(game.PlaceId, LocalPlayer)
 	end
 })
 
@@ -59,54 +117,66 @@ Section.NewButton({
 	end
 })
 
+------------------------------------------------------------------------
+-- CUSTOMIZATION
+------------------------------------------------------------------------
 local Section = UI:NewSection("Customization")
 
-local AccessoryNames = {"Slider Bracelets", "Cross Bracelets", "Leaves", "Winter Boots", "Double Bracelets", "Curly", "Punk",
-	"Lonely Woof", "Swiped Back", "Braided", "Long", "Ewooftional", "Long Straight", "Bed Head", "Short Spiky", "Long Spiky", 
-	"Spiky Punk", "Spiky", "Emo-Punk", "Sidecut", "Scene", "Extreme-Edge", "Long Sidecut", "Right Ear Piercing", 
-	"Left Ear Piercing", "Septum", "Eyebrow Piercing", "Snake Bites", "Guitar", "Swords", "Cape", "Medic", "Flowers", 
-	"Rope", "Ripped Shirt", "Bags", "Sword Set 1", "Sword Set 2", "Sword 1", "Sword 2", "Chains", "LeavesBack", "Backpack", "Scars", }
-
-local PartOptions    = { "EyeColor1", "EyeColor2", "Pupil1", "Pupil2", "White1", "White2", "Lash1", "Lash2", "Head", "Cheeks", "Muzzle",
-	"Eyebrow1", "Eyebrow2", "EyeLid", "Nose", "Jaw", "Gum", "Toungue1", "Toungue2", "NeckSecondary", "Torso", "TorsoSecondary",
-	"Hip", "HipSecondary", "RightShoulder", "RightArm", "RightLowerArm", "DragonFoot1", "LeftShoulder", "LeftArm", "LeftLowerArm",
-	"DragonFoot2", "RightThigh", "RightLeg", "RightLowerLeg", "DragonFoot3", "LegFluff1", "LeftThigh", "LeftLeg", "LeftLowerLeg", 
-	"DragonFoot4", "LegFluff2", "Tail1", "Tail2", "Tail3", "Tail5", "TailFluff1", "TailFluff2", "TailFluff3", "TailFluff4", 
-	"DragonTip", "OceanTailPrimary", "OceanFin", "DragonSpike7", "DragonSpike8", "DragonSpike9", "DragonSpike10", "DragonClaw1",
-	"DragonClaw2", "DragonClaw3", "DragonClaw4", "DragonDewClaw1", "DragonDewClaw2", "DragonWingL1", "DragonWingL2", "DragonWingL3",
-	"DragonWingL4", "DragonWingL5", "DragonWingR1", "DragonWingR2", "DragonWingR3", "DragonWingR4", "DragonWingR5", "DragonLSkin1", 
-	"DragonLSkin2", "DragonLSkin3", "DragonLSkin4", "DragonRSkin1", "DragonRSkin2", "DragonRSkin3", "DragonRSkin4", "DragonWingLDew",
-	"DragonWingRDew", "LeftWingStart", "RightWingStart", "DragonHornBig1", "DragonHornBig2", "DragonHornSmall1-1", "DragonHornSmall1-2",
-	"DragonHornSmall2-1", "DragonHornSmall2-2", "DragonSpike1", "DragonSpike2", "DragonSpike3", "DragonSpike4", "DragonSpike5", 
-	"DragonSpike6", "DragonSpike7", "DragonSpike8", "DragonSpike9", "DragonSpike10", "DragonHornTop1", "DragonHornTop2", "DragonHornTop3",
-	"DragonTip", "LeftWingStart", "LeftWing2", "LeftWing3", "RightWingStart", "RightWing2", "RightWing3", "Ocean1Primary", "Ocean1Secondary",
-	"Ocean2Primary", "Ocean2Secondary", "OceanTailPrimary", "OceanTailSecondary", "OceanDot1", "OceanDot2", "OceanDot3", "OceanDot4", 
-	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3", "ChestFluff", "BackFluff","FrontChestFluff", "Neck", }
-
+-- saved / default values (all of these persist between sessions)
 local chosenColor   = Library.DecodeColor(UI:GetSetting("Color")) or Color3.fromRGB(0, 0, 0)
 local Material      = UI:GetSetting("Material", "Neon")
 local Parts         = UI:GetSetting("Parts", { "EyeColor1" })
 local AccessoryName = UI:GetSetting("Accessory", AccessoryNames[1])
 local Value         = table.find(AccessoryNames, AccessoryName) or 1
+local Variant       = UI:GetSetting("Variant", "")
+if type(Parts) ~= "table" then Parts = { "EyeColor1" } end
+
+-- ---- material variant helpers ----
+local function listVariants()
+	local names, seen = {}, {}
+	for _, v in ipairs(MaterialService:GetDescendants()) do
+		if v:IsA("MaterialVariant") and not seen[v.Name] then
+			seen[v.Name] = true
+			table.insert(names, v.Name)
+		end
+	end
+	return names
+end
+
+-- returns variantName, baseMaterialName for a colormap ID (e.g. 123456 or "rbxassetid://123456")
+local function findVariantByColorMap(id)
+	local want = tostring(id):match("%d+")
+	if not want then return nil end
+	for _, v in ipairs(MaterialService:GetDescendants()) do
+		if v:IsA("MaterialVariant") then
+			local ok, cm = pcall(function() return v.ColorMap end)
+			if ok and cm then
+				for digits in tostring(cm):gmatch("%d+") do
+					if digits == want then
+						return v.Name, v.BaseMaterial.Name
+					end
+				end
+			end
+		end
+	end
+	return nil
+end
 
 Section.NewDropdown({
 	Text = "Select Accessory",
-	Searchable = true,
-	MaxHeight = 200,
-	Default = "Slider Bracelets",
+	Default = AccessoryName,
 	Options = AccessoryNames,
 	Callback = function(option)
+		UI:Notify("Accessory Selected", "You selected: " .. option, 2)
 		Value = table.find(AccessoryNames, option) or 1
 		UI:SetSetting("Accessory", option)
 	end
 })
 
-Section.NewDropdown({
-	Text = "Part to Color",
+local PartsDropdown = Section.NewDropdown({
+	Text = "Parts to Color",
 	Multi = true,
-	Searchable = true,
-	MaxHeight = 200,
-	Default = {"EyeColor1"},
+	Default = Parts,
 	Options = PartOptions,
 	Callback = function(selectedParts)
 		Parts = selectedParts
@@ -114,99 +184,88 @@ Section.NewDropdown({
 	end
 })
 
-local MaterialOptions = {}
-local skipMaterial = { Air = true }  -- terrain-only placeholder, not usable on parts
-for _, m in ipairs(Enum.Material:GetEnumItems()) do
-	if not skipMaterial[m.Name] then
-		table.insert(MaterialOptions, m.Name)
-	end
-end
-table.sort(MaterialOptions)
-
 Section.NewDropdown({
 	Text = "Select Material",
-	Searchable = true,
-	MaxHeight = 200,
-	Default = "Neon",
+	Default = Material,
 	Options = MaterialOptions,
 	Callback = function(option)
+		UI:Notify("Material Selected", "You selected: " .. option, 2)
 		Material = option
 		UI:SetSetting("Material", option)
 	end
 })
 
+local VariantBox = Section.NewAutoTextBox({
+	Text = "Variant",
+	Placeholder = "Name or colormap ID...",
+	SnapOnEnter = false,
+	Default = Variant,
+	GetOptions = listVariants,
+})
+
+Section.NewButton({
+	Text = "Set Variant",
+	Callback = function()
+		local text = (VariantBox.GetText():gsub("^%s*(.-)%s*$", "%1"))
+
+		if text == "" then
+			Variant = ""
+			UI:SetSetting("Variant", "")
+			UI:Notify("Variant", "Cleared", 2)
+			return
+		end
+
+		if (text:match("%d+") and not text:match("%a")) or text:lower():find("rbxassetid") then
+			local name, base = findVariantByColorMap(text)
+			if not name then
+				UI:Notify("Variant", "No variant uses that colormap ID", 3)
+				return
+			end
+			Variant = name
+			Material = base              -- a variant only works on its base material
+			UI:SetSetting("Material", base)
+			VariantBox.SetText(name)
+			UI:Notify("Variant", name .. " (" .. base .. ")", 3)
+		else
+			local name = VariantBox.GetResolved()
+			if not name then
+				UI:Notify("Variant", "No variant with that name", 3)
+				return
+			end
+			Variant = name
+			UI:Notify("Variant", name, 2)
+		end
+		UI:SetSetting("Variant", Variant)
+	end
+})
+
 Section.NewColorPicker({
-    Text = "Color",
-    Default = chosenColor,
-    Callback = function(color)
-        chosenColor = color
-		UI:SetSetting("Color", Library.EncodeColor(chosenColor))
-    end
+	Text = "Color",
+	Default = chosenColor,
+	Callback = function(color)
+		chosenColor = color
+		UI:SetSetting("Color", Library.EncodeColor(color))
+	end
 })
 
 Section.NewButton({
 	Text = "Set Name Color",
 	Callback = function()
-		local Event = game:GetService("ReplicatedStorage").Events["UpdateSetting"]
-		Event:InvokeServer(
-    		"ChangeColor",
-    		{
-        		chosenColor.R,
-        		chosenColor.G,
-        		chosenColor.B
-    		}
-		)
+		local Event = ReplicatedStorage.Events["UpdateSetting"]
+		Event:InvokeServer("ChangeColor", { chosenColor.R, chosenColor.G, chosenColor.B })
 	end
 })
 
 Section.NewButton({
 	Text = "Set Accessory Color/Material",
 	Callback = function()
-		local Event = game:GetService("ReplicatedStorage").Events["ColorAccessory"]
-		Event:FireServer(
-    		"Color",
-    		Value,
-			"Color1",
-    		chosenColor,
-    		{
-    		    Material = Material,
-    		    MaterialVariant = ""
-    		}
-		)
-		local Event = game:GetService("ReplicatedStorage").Events["ColorAccessory"]
-		Event:FireServer(
-    		"Color",
-    		Value,
-			"MeshPart",
-    		chosenColor,
-    		{
-    		    Material = Material,
-    		    MaterialVariant = ""
-    		}
-		)
-		local Event = game:GetService("ReplicatedStorage").Events["ColorAccessory"]
-		Event:FireServer(
-    		"Color",
-    		Value,
-			"Piercing",
-    		chosenColor,
-    		{
-    		    Material = Material,
-    		    MaterialVariant = ""
-    		}
-		)
-		local Event = game:GetService("ReplicatedStorage").Events["ColorAccessory"]
-		Event:FireServer(
-    		"Color",
-    		Value,
-			"Hat",
-    		chosenColor,
-    		{
-    		    Material = Material,
-    		    MaterialVariant = ""
-    		}
-		)
-		
+		local Event = ReplicatedStorage.Events["ColorAccessory"]
+		for _, target in ipairs({ "Color1", "MeshPart", "Piercing", "Hat" }) do
+			Event:FireServer("Color", Value, target, chosenColor, {
+				Material = Material,
+				MaterialVariant = Variant,
+			})
+		end
 	end
 })
 
@@ -214,30 +273,204 @@ Section.NewButton({
 	Text = "Set Part Color/Material",
 	Callback = function()
 		if #Parts == 0 then
-			UI:Notify("No Parts", "Select at least one part first", 2)
+			UI:Notify("Parts", "Select at least one part first", 2)
 			return
 		end
-
-		local Event = game:GetService("ReplicatedStorage").Events.UpdateColor
+		local Event = ReplicatedStorage.Events.UpdateColor
 		for _, partName in ipairs(Parts) do
-			Event:FireServer(
-				"Color",
-				partName,
-				chosenColor,
-				{
-					Material = Material,
-					MaterialVariant = ""
-				}
-			)
+			Event:FireServer("Color", partName, chosenColor, {
+				Material = Material,
+				MaterialVariant = Variant,
+			})
 		end
 		UI:Notify("Applied", #Parts .. " part(s) updated", 2)
 	end
 })
 
+-- ===== Color Fade =====
+local FADE_SEND_INTERVAL = 0.1   -- seconds between sends (raise if the game lags)
+local FADE_ACC_TARGETS   = { "Color1", "MeshPart", "Piercing", "Hat" }
+
+local FadePreset = {
+	"DragonHornBig1", "DragonHornBig2",
+	"RightArm", "LeftArm",
+	"TailFluff1", "TailFluff2", "TailFluff3", "TailFluff4",
+	"OceanFin",
+	"DragonWingL1", "DragonWingL2", "DragonWingL3", "DragonWingL4", "DragonWingL5",
+	"DragonWingR1", "DragonWingR2", "DragonWingR3", "DragonWingR4", "DragonWingR5",
+	"DragonWingLDew", "DragonWingRDew",
+	"LeftWingStart", "RightWingStart",
+	"Ocean1Secondary", "Ocean2Secondary",
+	"EyeColor1", "EyeColor2",
+	"White1", "White2",
+	"Pupil1", "Pupil2",
+}
+
+local function enc(c) return { c.R, c.G, c.B } end
+local function dec(t) return Library.DecodeColor(t) end
+
+local FadeColors = {
+	Color3.fromRGB(0, 0, 0), Color3.fromRGB(255, 0, 255), Color3.fromRGB(255, 255, 255),
+	Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 0, 255),
+}
+local savedColors = UI:GetSetting("FadeColors")
+if type(savedColors) == "table" then
+	for i = 1, #FadeColors do
+		local c = dec(savedColors[i])
+		if c then FadeColors[i] = c end
+	end
+end
+
+local FadeCount  = math.clamp(UI:GetSetting("FadeCount", 3), 2, #FadeColors)
+local FadeTenths = math.clamp(UI:GetSetting("FadeTenths", 10), 1, 100)
+local FadeTime   = FadeTenths / 10
+
+local fadeSlot, fadeAccessory = 1, false
+local fadePhase, fadeSendAcc, lastSig = 0, 0, ""
+local fadeConn
+
+local function saveFadeColors()
+	local out = {}
+	for i, c in ipairs(FadeColors) do out[i] = enc(c) end
+	UI:SetSetting("FadeColors", out)
+end
+
+local function currentFadeColor()
+	local n    = FadeCount
+	local base = math.floor(fadePhase)
+	local frac = fadePhase - base
+	local a    = FadeColors[base % n + 1]
+	local b    = FadeColors[(base + 1) % n + 1]
+	local alpha = TweenService:GetValue(frac, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+	return a:Lerp(b, alpha)
+end
+
+-- reads whatever the dropdown callbacks currently hold, with fallbacks
+local function fadeParts()    return type(Parts) == "table" and Parts or {} end
+local function fadeMaterial() return type(Material) == "string" and Material or "Neon" end
+local function fadeVariant()  return type(Variant)  == "string" and Variant  or ""     end
+local function fadeAccId()    return type(Value)    == "number" and Value    or 1      end
+
+local function sendFade(color)
+	local data = { Material = fadeMaterial(), MaterialVariant = fadeVariant() }
+	local UpdateColor = ReplicatedStorage.Events.UpdateColor
+	for _, partName in ipairs(fadeParts()) do
+		UpdateColor:FireServer("Color", partName, color, data)
+	end
+	if fadeAccessory then
+		local ColorAccessory = ReplicatedStorage.Events.ColorAccessory
+		for _, target in ipairs(FADE_ACC_TARGETS) do
+			ColorAccessory:FireServer("Color", fadeAccId(), target, color, data)
+		end
+	end
+end
+
+local function stepFade(dt)
+	fadePhase   = (fadePhase + dt / FadeTime) % FadeCount
+	fadeSendAcc = fadeSendAcc + dt
+	if fadeSendAcc < FADE_SEND_INTERVAL then return end
+	fadeSendAcc = 0
+
+	local color = currentFadeColor()
+	local r = math.floor(color.R * 255 + 0.5)
+	local g = math.floor(color.G * 255 + 0.5)
+	local b = math.floor(color.B * 255 + 0.5)
+
+	-- only send when the color OR the selections changed
+	local sig = table.concat({
+		r, g, b, fadeMaterial(), fadeVariant(), fadeAccId(),
+		fadeAccessory and 1 or 0, table.concat(fadeParts(), ","),
+	}, "|")
+	if sig == lastSig then return end
+	lastSig = sig
+	sendFade(color)
+end
+
+local function setFade(on)
+	if on and not fadeConn then
+		lastSig = ""
+		fadeConn = RunService.Heartbeat:Connect(stepFade)
+	elseif not on and fadeConn then
+		fadeConn:Disconnect()
+		fadeConn = nil
+	end
+end
+UI.ScreenGui.Destroying:Connect(function() setFade(false) end)
+
+Section.NewToggle({
+	Text = "Color Fade",
+	Callback = function(on)
+		if on then
+			local accName = AccessoryNames[fadeAccId()] or ("#" .. fadeAccId())
+			UI:Notify("Color Fade", string.format("%d parts | %s%s",
+				#fadeParts(), fadeMaterial(), fadeAccessory and (" | " .. accName) or ""), 3)
+		end
+		setFade(on)
+	end
+})
+
+Section.NewToggle({
+	Text = "Fade Accessory Too",
+	Callback = function(on)
+		fadeAccessory = on
+	end
+})
+
+Section.NewSlider({
+	Text = "Fade Time (x0.1s)", Min = 1, Max = 100, Value = FadeTenths,
+	Callback = function(v)
+		FadeTenths = math.max(v, 1)
+		FadeTime   = FadeTenths / 10
+		UI:SetSetting("FadeTenths", FadeTenths)
+	end
+})
+
+Section.NewSlider({
+	Text = "Colors Used", Min = 2, Max = #FadeColors, Value = FadeCount,
+	Callback = function(v)
+		FadeCount = math.clamp(v, 2, #FadeColors)
+		UI:SetSetting("FadeCount", FadeCount)
+	end
+})
+
+local slotNames = {}
+for i = 1, #FadeColors do slotNames[i] = "Color " .. i end
+
+local fadePicker
+Section.NewDropdown({
+	Text = "Edit Fade Color",
+	Default = "Color 1",
+	Options = slotNames,
+	Callback = function(opt)
+		fadeSlot = tonumber(opt:match("%d+")) or 1
+		fadePicker.SetColor(FadeColors[fadeSlot])
+	end
+})
+
+fadePicker = Section.NewColorPicker({
+	Text = "Fade Color",
+	Default = FadeColors[1],
+	Callback = function(c)
+		FadeColors[fadeSlot] = c   -- live: the loop reads this every frame
+		saveFadeColors()
+	end
+})
+
+Section.NewButton({
+	Text = "Use Preset Parts",
+	Callback = function()
+		Parts = table.clone(FadePreset)
+		UI:SetSetting("Parts", Parts)
+		PartsDropdown.SetSelected(Parts)
+		UI:Notify("Color Fade", #Parts .. " parts selected", 2)
+	end
+})
+
+------------------------------------------------------------------------
+-- COPY DESIGN
+------------------------------------------------------------------------
 local Section = UI:NewSection("Copy Design")
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LocalPlayer       = game:GetService("Players").LocalPlayer
 local ACCESSORY_TARGETS = { "Color1", "MeshPart", "Piercing", "Hat" }
 local ROOT_NAMES        = { "PlayerCharacters", "Customizing" }  -- spawned / still customizing
 local NameBox
@@ -429,10 +662,12 @@ Section.NewButton({
 	end
 })
 
+------------------------------------------------------------------------
+-- MY OCs
+------------------------------------------------------------------------
 local Section = UI:NewSection("My OCs")
 
 local function getOCs() return UI:GetSetting("OCs", {}) end
-
 local function trim(s) return (string.gsub(s, "^%s*(.-)%s*$", "%1")) end
 
 local OCBox = Section.NewAutoTextBox({
@@ -508,102 +743,86 @@ Section.NewButton({
 	end
 })
 
+------------------------------------------------------------------------
+-- SETTINGS
+------------------------------------------------------------------------
 local Section = UI:NewSection("Settings")
 
-Default = UI:GetPreset(),
-
-Section.NewButton({
-    Text = "Reset",
-    Callback = function()
-        UI:ClearSettings({ "OCs" })
-        UI:ResetTheme()
-        syncPicker()
-        UI:Notify("Reset", "Settings cleared (OCs kept)", 2)
-    end
-})
-
-Section.NewKeybind({
-    Text = "Toggle UI Key",
-    Default = UI:GetSetting("ToggleKey", "F1"),
-    Changed = function(key) UI:SetToggleKey(key) end,
-})
-
 local ThemeTargets = {
-    { "Accent",            "Accent"      },
-    { "Accent Hover",      "AccentHover" },
-    { "Window Background", "Secondary"   },
-    { "Title Bar / Tabs",  "Primary"     },
-    { "Rows / Buttons",    "Elevated"    },
-    { "Borders",           "Edge"        },
-    { "Text",              "Text"        },
-    { "Dim Text",          "TextDim"     },
+	{ "Accent",            "Accent"      },
+	{ "Accent Hover",      "AccentHover" },
+	{ "Window Background", "Secondary"   },
+	{ "Title Bar / Tabs",  "Primary"     },
+	{ "Rows / Buttons",    "Elevated"    },
+	{ "Borders",           "Edge"        },
+	{ "Text",              "Text"        },
+	{ "Dim Text",          "TextDim"     },
 }
 
 local targetNames, targetKeys = {}, {}
 for _, t in ipairs(ThemeTargets) do
-    table.insert(targetNames, t[1])
-    targetKeys[t[1]] = t[2]
+	table.insert(targetNames, t[1])
+	targetKeys[t[1]] = t[2]
 end
 
 local selectedKey = "Accent"
 local picker
 
 local function syncPicker()
-    picker.SetColor(UI:GetTheme(selectedKey))
+	picker.SetColor(UI:GetTheme(selectedKey))
 end
 
 Section.NewDropdown({
-    Text = "Theme Preset",
-	Searchable = true,
-	MaxHeight = 200,
-    Default = "Default",
-    Options = UI:GetPresetNames(),
-    Callback = function(name)
-        UI:ApplyPreset(name)
-        syncPicker()
-    end
+	Text = "Theme Preset",
+	Default = UI:GetPreset(),
+	Options = UI:GetPresetNames(),
+	Callback = function(name)
+		UI:ApplyPreset(name)
+		syncPicker()
+	end
 })
 
 Section.NewDropdown({
-    Text = "Customize",
-	Searchable = true,
-	MaxHeight = 200,
-    Default = "Accent",
-    Options = targetNames,
-    Callback = function(name)
-        selectedKey = targetKeys[name]
-        syncPicker()
-    end
+	Text = "Customize",
+	Default = "Accent",
+	Options = targetNames,
+	Callback = function(name)
+		selectedKey = targetKeys[name]
+		syncPicker()
+	end
 })
 
 picker = Section.NewColorPicker({
-    Text = "Custom Color",
-    Default = UI:GetTheme("Accent"),
-    Callback = function(color)
-        UI:SetTheme(selectedKey, color)
-    end
+	Text = "Custom Color",
+	Default = UI:GetTheme("Accent"),
+	Callback = function(color)
+		UI:SetTheme(selectedKey, color)
+	end
 })
 
 Section.NewButton({
-    Text = "Reset Theme",
-    Callback = function()
-        UI:ResetTheme()
-        syncPicker()
-        UI:Notify("Theme", "Theme reset to default", 2)
-    end
+	Text = "Reset Theme",
+	Callback = function()
+		UI:ResetTheme()
+		syncPicker()
+		UI:Notify("Theme", "Theme reset to default", 2)
+	end
 })
 
 Section.NewButton({
-    Text = "Reset",
-    Callback = function()
-        UI:Notify("Reset", "Settings reset!", 2)
-    end
+	Text = "Reset Saved Settings",
+	Callback = function()
+		UI:ClearSettings({ "OCs" })   -- keeps your saved OCs
+		UI:ResetTheme()
+		syncPicker()
+		UI:Notify("Reset", "Settings cleared (OCs kept)", 2)
+	end
 })
 
 Section.NewKeybind({
-    Text = "Toggle UI Key",
-    Default = "F1",
-    Callback = function(key)
-        UI:SetToggleKey(key)
-    end
+	Text = "Toggle UI Key",
+	Default = UI:GetSetting("ToggleKey", "F1"),
+	Changed = function(key)
+		UI:SetToggleKey(key)
+	end
 })
