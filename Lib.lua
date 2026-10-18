@@ -1,13 +1,14 @@
 --Aero UI
---//Version 0.9.1
+--//Version 1.0.0
 local Library = {}
 Library.__index = Library
 
-local Players         = game:GetService("Players")
+local Players          = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-local TweenService    = game:GetService("TweenService")
-local CoreGui         = game:GetService("CoreGui")
-local Player          = Players.LocalPlayer
+local TweenService     = game:GetService("TweenService")
+local CoreGui          = game:GetService("CoreGui")
+local HttpService      = game:GetService("HttpService")
+local Player           = Players.LocalPlayer
 
 local Config = {
     Theme = {
@@ -155,11 +156,11 @@ end
 local function pickKey(inst, prop, old)
     local current = inst[prop]
     local role = inst:GetAttribute("Theme_" .. prop)
-    if role and old[role] == current then return role end   
-    for _, key in ipairs(THEME_KEYS) do                      
+    if role and old[role] == current then return role end
+    for _, key in ipairs(THEME_KEYS) do
         if old[key] == current then return key end
     end
-    return role                                              
+    return role
 end
 
 local function commit(gui, changes)
@@ -202,8 +203,6 @@ local function commit(gui, changes)
 end
 
 -- ===== persistent storage =====
-local HttpService = game:GetService("HttpService")
-
 local Store = { Data = {}, Folder = "AeroUI", Name = "default", Queued = false }
 
 local function fsReady()
@@ -303,7 +302,7 @@ function Library:ClearSettings(keep) -- keep = { "OCs" } preserves those keys
     storeFlush()
 end
 
--- ===== theme API (now persistent) =====
+-- ===== theme API (persistent) =====
 function Library:SetTheme(key, color)
     commit(self.ScreenGui, { [key] = color })
     persistTheme("Custom")
@@ -670,6 +669,7 @@ function Library.new(opts)
         setMinimized(not self.IsMinimized)
     end)
 
+    -- toggle key (restored from saved settings when available)
     self.ToggleKey = Enum.KeyCode.LeftShift
     local savedKey = Store.Data.Settings and Store.Data.Settings.ToggleKey
     if type(savedKey) == "string" then
@@ -686,8 +686,6 @@ function Library.new(opts)
         if gp then return end
 
         if input.KeyCode == self.ToggleKey then
-            print("Toggle key pressed")
-
             self.Window.Visible = not self.Window.Visible
 
             local glow = self.ScreenGui:FindFirstChild("GlowRing")
@@ -852,7 +850,7 @@ function Library:NewSection(name)
 
     function section.NewToggle(props)
         local row   = makeRow(34)
-        local state = false
+        local state = props.Default == true
         local s     = rowStroke(row)
 
         Label(row, { Text = props.Text or "Toggle", Color = Config.Theme.Text, Size = 13, Pos = UDim2.new(0, 12, 0, 0), FrameSize = UDim2.new(1, -80, 1, 0) })
@@ -875,6 +873,16 @@ function Library:NewSection(name)
         knob.Parent           = track
         Corner(knob, 7)
 
+        local function render(animate)
+            local info = animate and TI_MED or TweenInfo.new(0)
+            Tween(track, info, { BackgroundColor3 = state and Config.Theme.Accent or Config.Theme.Secondary })
+            Tween(knob,  info, {
+                Position = state and UDim2.new(0, 19, 0.5, -7) or UDim2.new(0, 3, 0.5, -7),
+                BackgroundColor3 = state and Config.Theme.Text or Config.Theme.TextDim,
+            })
+        end
+        render(false)
+
         local btn = Instance.new("TextButton")
         btn.BackgroundTransparency = 1
         btn.Size   = UDim2.new(1, 0, 1, 0)
@@ -889,16 +897,18 @@ function Library:NewSection(name)
         end)
         btn.MouseButton1Click:Connect(function()
             state = not state
-            if state then
-                Tween(track, TI_MED, { BackgroundColor3 = Config.Theme.Accent })
-                Tween(knob,  TI_MED, { Position = UDim2.new(0, 19, 0.5, -7), BackgroundColor3 = Config.Theme.Text })
-            else
-                Tween(track, TI_MED, { BackgroundColor3 = Config.Theme.Secondary })
-                Tween(knob,  TI_MED, { Position = UDim2.new(0, 3, 0.5, -7), BackgroundColor3 = Config.Theme.TextDim })
-            end
+            render(true)
             if props.Callback then props.Callback(state) end
         end)
-        return row
+
+        local obj = { Row = row }
+        function obj.Get() return state end
+        function obj.Set(v, silent)
+            state = v and true or false
+            render(true)
+            if not silent and props.Callback then props.Callback(state) end
+        end
+        return obj
     end
 
     function section.NewSlider(props)
@@ -1007,6 +1017,7 @@ function Library:NewSection(name)
         local multi    = props.Multi == true
         local isOpen   = false
 
+        -- drop duplicate options
         local options, seen = {}, {}
         for _, opt in ipairs(props.Options or {}) do
             if not seen[opt] then
@@ -1015,9 +1026,11 @@ function Library:NewSection(name)
             end
         end
 
+        -- search box shows automatically for long lists; override with Searchable = true/false
         local searchable = props.Searchable
         if searchable == nil then searchable = #options > 8 end
 
+        -- multi-select state
         local selected = {}
         if multi then
             local d = props.Default
@@ -1043,6 +1056,7 @@ function Library:NewSection(name)
             return #picked .. " selected"
         end
 
+        -- vertical layout: header, [search], [multi buttons], list
         local y = headerH + 1
         local searchY, btnY
         if searchable then searchY = y + 5; y = y + 32 end
@@ -1079,6 +1093,7 @@ function Library:NewSection(name)
         sep.Position         = UDim2.new(0, 12, 0, headerH)
         sep.Parent           = dd
 
+        -- search box
         local searchBox
         if searchable then
             local sbBg = Instance.new("Frame")
@@ -1112,6 +1127,7 @@ function Library:NewSection(name)
             end)
         end
 
+        -- scrolling option list
         local list = Instance.new("ScrollingFrame")
         list.BackgroundTransparency = 1
         list.BorderSizePixel        = 0
@@ -1145,8 +1161,8 @@ function Library:NewSection(name)
         end
 
         local function fire()
-            if props.Callback then
-                if multi then props.Callback(getSelected()) end
+            if props.Callback and multi then
+                props.Callback(getSelected())
             end
         end
 
@@ -1165,13 +1181,11 @@ function Library:NewSection(name)
             noResults.Visible = searchable and visibleCount == 0
             list.CanvasPosition = Vector2.new(0, 0)
             list.Size = UDim2.new(1, 0, 0, listHeight())
-            noResults.Visible = searchable and visibleCount == 0
-            list.CanvasPosition = Vector2.new(0, 0)
-            list.Size = UDim2.new(1, 0, 0, listHeight())
 
             if selectBtn then
                 selectBtn.Text = (q == "") and "Select All" or "Select Shown"
             end
+
             if isOpen then
                 Tween(dd, TI_FAST, { Size = UDim2.new(1, 0, 0, openHeight()) })
             end
@@ -1195,6 +1209,7 @@ function Library:NewSection(name)
             })
         end
 
+        -- "Select All / Select Shown" and "Clear" buttons (multi only)
         if multi then
             local function smallButton(text, xScale, xOff, onClick)
                 local b = Instance.new("TextButton")
@@ -1225,6 +1240,7 @@ function Library:NewSection(name)
                 refreshHeader()
                 fire()
             end)
+
             smallButton("Clear", 0.5, 4, function()
                 for _, item in ipairs(items) do
                     selected[item.opt] = nil
@@ -1572,6 +1588,7 @@ function Library:NewSection(name)
         obj.Row = row
         return obj
     end
+
     function section.NewParagraph(props)
         -- accepts a string, or a table of lines
         if type(props) == "string" then
@@ -1612,7 +1629,7 @@ function Library:NewSection(name)
         return obj
     end
 
-        function section.NewProfile(props)
+    function section.NewProfile(props)
         props = props or {}
         local userId = props.UserId or Player.UserId
         local isLocal = (userId == Player.UserId)
@@ -1662,6 +1679,7 @@ function Library:NewSection(name)
             infoLbl.Text = string.format("ID: %d  •  %d days old", userId, Player.AccountAge)
         end
 
+        -- confirm the name from the user ID
         task.spawn(function()
             local ok, name = pcall(function()
                 return Players:GetNameFromUserIdAsync(userId)
@@ -1721,20 +1739,19 @@ function Library:NewSection(name)
             else
                 Tween(badge, TI_FAST, { BackgroundColor3 = Config.Theme.Secondary })
                 Tween(badgeStroke, TI_FAST, { Color = Config.Theme.Edge })
-                kbLbl.Text       = props.Default or "None"
+                kbLbl.Text       = boundKey and boundKey.Name or "None"
                 kbLbl.TextColor3 = Config.Theme.TextDim
                 Tween(s, TI_FAST, { Color = Config.Theme.Edge, Thickness = 1 })
             end
         end)
 
         UserInputService.InputBegan:Connect(function(input, gp)
-            
+
             if gp then return end
 
             if isBinding and input.UserInputType == Enum.UserInputType.Keyboard then
                 isBinding = false
                 boundKey = input.KeyCode
-                if props.Changed then props.Changed(boundKey) end
 
                 kbLbl.Text = input.KeyCode.Name
                 kbLbl.TextColor3 = Config.Theme.TextDim
@@ -1748,10 +1765,13 @@ function Library:NewSection(name)
                 })
 
                 Tween(s, TI_FAST, {
-                Color = Config.Theme.Edge,
+                    Color = Config.Theme.Edge,
                     Thickness = 1
                 })
 
+                if props.Changed then
+                    props.Changed(boundKey)
+                end
                 return
             end
 
@@ -1761,7 +1781,7 @@ function Library:NewSection(name)
                 end
             end
         end)
-    return row
+        return row
     end
 
     function section.NewColorPicker(props)
@@ -1774,6 +1794,7 @@ function Library:NewSection(name)
 
         Label(row, { Text = props.Text or "Color", Size = 13, Pos = UDim2.new(0, 12, 0, 4), FrameSize = UDim2.new(0.6, 0, 0, 18) })
 
+        -- preview swatch
         local swatch = Raw(Instance.new("Frame"))
         swatch.BorderSizePixel  = 0
         swatch.BackgroundColor3 = color
@@ -1783,6 +1804,7 @@ function Library:NewSection(name)
         Corner(swatch, 4)
         Stroke(swatch, Config.Theme.Edge, 1)
 
+        -- saturation / brightness square
         local sv = Raw(Instance.new("Frame"))
         sv.BorderSizePixel  = 0
         sv.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
@@ -1798,7 +1820,7 @@ function Library:NewSection(name)
         white.Parent           = sv
         Corner(white, 5)
         local wg = Instance.new("UIGradient")
-        wg.Transparency = NumberSequence.new(0, 1)
+        wg.Transparency = NumberSequence.new(0, 1)      -- left: opaque white -> right: clear
         wg.Parent = white
 
         local black = Raw(Instance.new("Frame"))
@@ -1809,7 +1831,7 @@ function Library:NewSection(name)
         Corner(black, 5)
         local bg = Instance.new("UIGradient")
         bg.Rotation     = 90
-        bg.Transparency = NumberSequence.new(1, 0)
+        bg.Transparency = NumberSequence.new(1, 0)      -- top: clear -> bottom: opaque black
         bg.Parent = black
 
         local svCur = Instance.new("Frame")
@@ -1828,6 +1850,7 @@ function Library:NewSection(name)
         svHit.Active = true
         svHit.Parent = sv
 
+        -- hue bar
         local hue = Raw(Instance.new("Frame"))
         hue.BorderSizePixel  = 0
         hue.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -1860,6 +1883,7 @@ function Library:NewSection(name)
         hueHit.Active = true
         hueHit.Parent = hue
 
+        -- R / G / B / HEX boxes
         local boxes = Instance.new("Frame")
         boxes.BackgroundTransparency = 1
         boxes.Size     = UDim2.new(1, -18, 0, 22)
@@ -1906,6 +1930,7 @@ function Library:NewSection(name)
         local boxB = makeBox(0.4, 0.2, "B")
         local boxH = makeBox(0.6, 0.4, "HEX")
 
+        -- state / rendering
         local function render()
             sv.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
             svCur.Position      = UDim2.new(s, 0, 1 - v, 0)
@@ -1933,7 +1958,7 @@ function Library:NewSection(name)
         local function fromColor(c, shouldEmit)
             color = c
             local nh, ns, nv = c:ToHSV()
-            if ns > 0 and nv > 0 then h = nh end
+            if ns > 0 and nv > 0 then h = nh end -- keep hue when the color is grey/black
             s, v = ns, nv
             render()
             if shouldEmit then emit() end
@@ -1974,6 +1999,7 @@ function Library:NewSection(name)
             if isPress(i) then dragMode = nil end
         end)
 
+        -- typed input
         local function channel(tb, current)
             local n = tonumber(tb.Text)
             if n then return math.clamp(math.floor(n + 0.5), 0, 255) end
@@ -1994,14 +2020,14 @@ function Library:NewSection(name)
                     tonumber(hex:sub(5, 6), 16)
                 ), true)
             else
-                render()
+                render() -- invalid hex: restore the previous value
             end
         end)
 
         render()
 
         local obj = { Row = row }
-        function obj.SetColor(c) fromColor(c, false) end
+        function obj.SetColor(c) fromColor(c, false) end  -- no callback, safe to call from code
         function obj.GetColor() return color end
         return obj
     end
