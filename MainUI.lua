@@ -6,16 +6,13 @@
 	Free open source
 
 	Version Number: 1.1.0
-
-	NOTE: the library below must be the NEW AeroUI_Lib.lua (host it at the same
-	GitHub path, or test locally with:  loadstring(readfile("AeroUI_Lib.lua"))())
 ]]--
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/FlixzyVibxsx/AeroUI/refs/heads/main/Lib.lua"))()
 
 local UI = Library.new({ ConfigName = "WolvesLife3" })
 if not UI:GetSetting("ToggleKey") then
-	UI:SetToggleKey(Enum.KeyCode.F1)   -- first-run default
+	UI:SetToggleKey(Enum.KeyCode.F1)
 end
 UI:Notify("Welcome", "Aero UI Loaded Successfully", 3)
 if not Library.CanSave() then
