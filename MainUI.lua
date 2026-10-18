@@ -291,21 +291,6 @@ Section.NewButton({
 local FADE_SEND_INTERVAL = 0.1   -- seconds between sends (raise if the game lags)
 local FADE_ACC_TARGETS   = { "Color1", "MeshPart", "Piercing", "Hat" }
 
-local FadePreset = {
-	"DragonHornBig1", "DragonHornBig2",
-	"RightArm", "LeftArm",
-	"TailFluff1", "TailFluff2", "TailFluff3", "TailFluff4",
-	"OceanFin",
-	"DragonWingL1", "DragonWingL2", "DragonWingL3", "DragonWingL4", "DragonWingL5",
-	"DragonWingR1", "DragonWingR2", "DragonWingR3", "DragonWingR4", "DragonWingR5",
-	"DragonWingLDew", "DragonWingRDew",
-	"LeftWingStart", "RightWingStart",
-	"Ocean1Secondary", "Ocean2Secondary",
-	"EyeColor1", "EyeColor2",
-	"White1", "White2",
-	"Pupil1", "Pupil2",
-}
-
 local function enc(c) return { c.R, c.G, c.B } end
 local function dec(t) return Library.DecodeColor(t) end
 
@@ -453,16 +438,6 @@ fadePicker = Section.NewColorPicker({
 	Callback = function(c)
 		FadeColors[fadeSlot] = c   -- live: the loop reads this every frame
 		saveFadeColors()
-	end
-})
-
-Section.NewButton({
-	Text = "Use Preset Parts",
-	Callback = function()
-		Parts = table.clone(FadePreset)
-		UI:SetSetting("Parts", Parts)
-		PartsDropdown.SetSelected(Parts)
-		UI:Notify("Color Fade", #Parts .. " parts selected", 2)
 	end
 })
 
