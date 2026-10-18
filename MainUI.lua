@@ -5,7 +5,7 @@
 
 	Free open source
 
-	Version Number: 1.0.11
+	Version Number: 1.1.0
 ]]--
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/FlixzyVibxsx/AeroUI/refs/heads/main/Lib.lua"))()
@@ -29,7 +29,7 @@ Section.NewParagraph({
     "Made by rFlixzypoo",
     "Assets from q_ow2",
     "Free and Open Source",
-    "Version: 1.0.11",
+    "Version: 1.1.0",
     "Flixz is a simp for his girlfriend <3",
 })
 
@@ -65,7 +65,8 @@ local AccessoryNames = {"Slider Bracelets", "Cross Bracelets", "Leaves", "Winter
 	"Lonely Woof", "Swiped Back", "Braided", "Long", "Ewooftional", "Long Straight", "Bed Head", "Short Spiky", "Long Spiky", 
 	"Spiky Punk", "Spiky", "Emo-Punk", "Sidecut", "Scene", "Extreme-Edge", "Long Sidecut", "Right Ear Piercing", 
 	"Left Ear Piercing", "Septum", "Eyebrow Piercing", "Snake Bites", "Guitar", "Swords", "Cape", "Medic", "Flowers", 
-	"Rope", "Ripped Shirt", "Bags", "Sword Set 1", "Sword Set 2", "Sword 1", "Sword 2", "Chains", "LeavesBack", "Backpack", "Scars" }
+	"Rope", "Ripped Shirt", "Bags", "Sword Set 1", "Sword Set 2", "Sword 1", "Sword 2", "Chains", "LeavesBack", "Backpack", "Scars", }
+
 local PartOptions    = { "EyeColor1", "EyeColor2", "Pupil1", "Pupil2", "White1", "White2", "Lash1", "Lash2", "Head", "Cheeks", "Muzzle",
 	"Eyebrow1", "Eyebrow2", "EyeLid", "Nose", "Jaw", "Gum", "Toungue1", "Toungue2", "NeckSecondary", "Torso", "TorsoSecondary",
 	"Hip", "HipSecondary", "RightShoulder", "RightArm", "RightLowerArm", "DragonFoot1", "LeftShoulder", "LeftArm", "LeftLowerArm",
@@ -113,14 +114,21 @@ Section.NewDropdown({
 	end
 })
 
+local MaterialOptions = {}
+local skipMaterial = { Air = true }  -- terrain-only placeholder, not usable on parts
+for _, m in ipairs(Enum.Material:GetEnumItems()) do
+	if not skipMaterial[m.Name] then
+		table.insert(MaterialOptions, m.Name)
+	end
+end
+table.sort(MaterialOptions)
+
 Section.NewDropdown({
 	Text = "Select Material",
 	Searchable = true,
 	MaxHeight = 200,
 	Default = "Neon",
-	Options = {"ForceField", "Plastic", "Neon", "Wood", "Slate", "Concrete", "Granite", "Brick", "Pebble", "CorrodedMetal", 
-	"DiamondPlate", "Foil", "Grass", "Ice", "Marble", "Metal", "Rock", "Sand", "SmoothPlastic", "Snow", 
-	"Fabric",},
+	Options = MaterialOptions,
 	Callback = function(option)
 		Material = option
 		UI:SetSetting("Material", option)
@@ -582,5 +590,20 @@ Section.NewButton({
         UI:ResetTheme()
         syncPicker()
         UI:Notify("Theme", "Theme reset to default", 2)
+    end
+})
+
+Section.NewButton({
+    Text = "Reset",
+    Callback = function()
+        UI:Notify("Reset", "Settings reset!", 2)
+    end
+})
+
+Section.NewKeybind({
+    Text = "Toggle UI Key",
+    Default = "F1",
+    Callback = function(key)
+        UI:SetToggleKey(key)
     end
 })
