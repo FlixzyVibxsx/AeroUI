@@ -284,159 +284,226 @@ Section.NewButton({
 	end
 })
 
--- ===== Color Fade =====
-local FADE_SEND_INTERVAL = 0.1   -- seconds between sends (raise if the game lags)
-local FADE_ACC_TARGETS   = { "Color1", "MeshPart", "Piercing", "Hat" }
+------------------------------------------------------------------------
+-- COLOR FADE  (own tab, own state - independent of Customization)
+------------------------------------------------------------------------
+local Section = UI:NewSection("Color Fade")
 
-local function enc(c) return { c.R, c.G, c.B } end
-local function dec(t) return Library.DecodeColor(t) end
+do
+	local SEND_INTERVAL = 0.1   -- seconds between sends (raise if the game lags)
+	local ACC_TARGETS   = { "Color1", "MeshPart", "Piercing", "Hat" }
 
-local FadeColors = {
-	Color3.fromRGB(0, 0, 0), Color3.fromRGB(255, 0, 255), Color3.fromRGB(255, 255, 255),
-	Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 0, 255),
-}
-local savedColors = UI:GetSetting("FadeColors")
-if type(savedColors) == "table" then
-	for i = 1, #FadeColors do
-		local c = dec(savedColors[i])
-		if c then FadeColors[i] = c end
+	-- only keep names that exist in PartOptions (protects against bad saved data)
+	local validPart = {}
+	for _, n in ipairs(PartOptions) do validPart[n] = true end
+	local function cleanParts(list)
+		local out = {}
+		if type(list) == "table" then
+			for _, n in ipairs(list) do
+				if validPart[n] then table.insert(out, n) end
+			end
+		end
+		return out
 	end
-end
 
-local FadeCount  = math.clamp(UI:GetSetting("FadeCount", 3), 2, #FadeColors)
-local FadeTenths = math.clamp(UI:GetSetting("FadeTenths", 10), 1, 100)
-local FadeTime   = FadeTenths / 10
+	-- all fade state lives here; nothing else in the script touches it
+	local S = {
+		Colors = {
+			Color3.fromRGB(0, 0, 0), Color3.fromRGB(255, 0, 255), Color3.fromRGB(255, 255, 255),
+			Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 0, 255),
+		},
+		Slot = 1, Phase = 0, SendAcc = 0, Sig = "", Conn = nil,
+	}
 
-local fadeSlot, fadeAccessory = 1, false
-local fadePhase, fadeSendAcc, lastSig = 0, 0, ""
-local fadeConn
-
-local function saveFadeColors()
-	local out = {}
-	for i, c in ipairs(FadeColors) do out[i] = enc(c) end
-	UI:SetSetting("FadeColors", out)
-end
-
-local function currentFadeColor()
-	local n    = FadeCount
-	local base = math.floor(fadePhase)
-	local frac = fadePhase - base
-	local a    = FadeColors[base % n + 1]
-	local b    = FadeColors[(base + 1) % n + 1]
-	local alpha = TweenService:GetValue(frac, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-	return a:Lerp(b, alpha)
-end
-
--- reads whatever the dropdown callbacks currently hold, with fallbacks
-local function fadeParts()    return type(Parts) == "table" and Parts or {} end
-local function fadeMaterial() return type(Material) == "string" and Material or "Neon" end
-local function fadeVariant()  return type(Variant)  == "string" and Variant  or ""     end
-local function fadeAccId()    return type(Value)    == "number" and Value    or 1      end
-
-local function sendFade(color)
-	local data = { Material = fadeMaterial(), MaterialVariant = fadeVariant() }
-	local UpdateColor = ReplicatedStorage.Events.UpdateColor
-	for _, partName in ipairs(fadeParts()) do
-		UpdateColor:FireServer("Color", partName, color, data)
-	end
-	if fadeAccessory then
-		local ColorAccessory = ReplicatedStorage.Events.ColorAccessory
-		for _, target in ipairs(FADE_ACC_TARGETS) do
-			ColorAccessory:FireServer("Color", fadeAccId(), target, color, data)
+	-- load saved settings
+	local savedColors = UI:GetSetting("FadeColors")
+	if type(savedColors) == "table" then
+		for i = 1, #S.Colors do
+			local c = Library.DecodeColor(savedColors[i])
+			if c then S.Colors[i] = c end
 		end
 	end
-end
+	S.Count  = math.clamp(tonumber(UI:GetSetting("FadeCount", 3)) or 3, 2, #S.Colors)
+	S.Tenths = math.clamp(tonumber(UI:GetSetting("FadeTenths", 10)) or 10, 1, 100)
 
-local function stepFade(dt)
-	fadePhase   = (fadePhase + dt / FadeTime) % FadeCount
-	fadeSendAcc = fadeSendAcc + dt
-	if fadeSendAcc < FADE_SEND_INTERVAL then return end
-	fadeSendAcc = 0
+	local savedParts = UI:GetSetting("FadeParts")
+	S.Parts        = (savedParts ~= nil) and cleanParts(savedParts) or table.clone(DEFAULT_PARTS)
+	S.Material     = UI:GetSetting("FadeMaterial", "Neon")
+	S.AccessoryName = UI:GetSetting("FadeAccessory", AccessoryNames[1])
+	if not table.find(AccessoryNames, S.AccessoryName) then S.AccessoryName = AccessoryNames[1] end
+	S.UseAccessory = UI:GetSetting("FadeUseAccessory", false) == true
 
-	local color = currentFadeColor()
-	local r = math.floor(color.R * 255 + 0.5)
-	local g = math.floor(color.G * 255 + 0.5)
-	local b = math.floor(color.B * 255 + 0.5)
-
-	-- only send when the color OR the selections changed
-	local sig = table.concat({
-		r, g, b, fadeMaterial(), fadeVariant(), fadeAccId(),
-		fadeAccessory and 1 or 0, table.concat(fadeParts(), ","),
-	}, "|")
-	if sig == lastSig then return end
-	lastSig = sig
-	sendFade(color)
-end
-
-local function setFade(on)
-	if on and not fadeConn then
-		lastSig = ""
-		fadeConn = RunService.Heartbeat:Connect(stepFade)
-	elseif not on and fadeConn then
-		fadeConn:Disconnect()
-		fadeConn = nil
+	local function saveColors()
+		local out = {}
+		for i, c in ipairs(S.Colors) do out[i] = Library.EncodeColor(c) end
+		UI:SetSetting("FadeColors", out)
 	end
-end
-UI.ScreenGui.Destroying:Connect(function() setFade(false) end)
 
-Section.NewToggle({
-	Text = "Color Fade",
-	Callback = function(on)
-		if on then
-			local accName = AccessoryNames[fadeAccId()] or ("#" .. fadeAccId())
-			UI:Notify("Color Fade", string.format("%d parts | %s%s",
-				#fadeParts(), fadeMaterial(), fadeAccessory and (" | " .. accName) or ""), 3)
+	local function currentColor()
+		local n    = S.Count
+		local base = math.floor(S.Phase)
+		local frac = S.Phase - base
+		local a    = S.Colors[base % n + 1]
+		local b    = S.Colors[(base + 1) % n + 1]
+		local alpha = TweenService:GetValue(frac, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		return a:Lerp(b, alpha)
+	end
+
+	local function send(color)
+		local events = ReplicatedStorage:FindFirstChild("Events")
+		if not events then return end
+		local UpdateColor    = events:FindFirstChild("UpdateColor")
+		local ColorAccessory = events:FindFirstChild("ColorAccessory")
+		local data = { Material = S.Material, MaterialVariant = "" }
+
+		local parts = S.Parts
+		if UpdateColor then
+			for _, partName in ipairs(parts) do
+				UpdateColor:FireServer("Color", partName, color, data)
+			end
 		end
-		setFade(on)
+		if S.UseAccessory and ColorAccessory then
+			local id = table.find(AccessoryNames, S.AccessoryName) or 1
+			for _, target in ipairs(ACC_TARGETS) do
+				ColorAccessory:FireServer("Color", id, target, color, data)
+			end
+		end
 	end
-})
 
-Section.NewToggle({
-	Text = "Fade Accessory Too",
-	Callback = function(on)
-		fadeAccessory = on
+	local function step(dt)
+		S.Phase   = (S.Phase + dt / (S.Tenths / 10)) % S.Count
+		S.SendAcc = S.SendAcc + dt
+		if S.SendAcc < SEND_INTERVAL then return end
+		S.SendAcc = 0
+
+		-- nothing selected: stay on, stay idle, never error
+		if #S.Parts == 0 and not S.UseAccessory then
+			S.Sig = ""
+			return
+		end
+
+		local color = currentColor()
+		local r = math.floor(color.R * 255 + 0.5)
+		local g = math.floor(color.G * 255 + 0.5)
+		local b = math.floor(color.B * 255 + 0.5)
+
+		-- only send when the color OR the fade's own selections changed
+		local sig = table.concat({
+			r, g, b, S.Material, S.UseAccessory and S.AccessoryName or "-", table.concat(S.Parts, ","),
+		}, "|")
+		if sig == S.Sig then return end
+		S.Sig = sig
+
+		local ok, err = pcall(send, color)
+		if not ok then warn("[ColorFade] " .. tostring(err)) end
 	end
-})
 
-Section.NewSlider({
-	Text = "Fade Time (x0.1s)", Min = 1, Max = 100, Value = FadeTenths,
-	Callback = function(v)
-		FadeTenths = math.max(v, 1)
-		FadeTime   = FadeTenths / 10
-		UI:SetSetting("FadeTenths", FadeTenths)
+	local function setFade(on)
+		if on and not S.Conn then
+			S.Sig = ""
+			S.Conn = RunService.Heartbeat:Connect(step)
+		elseif not on and S.Conn then
+			S.Conn:Disconnect()
+			S.Conn = nil
+		end
 	end
-})
+	UI.ScreenGui.Destroying:Connect(function() setFade(false) end)
 
-Section.NewSlider({
-	Text = "Colors Used", Min = 2, Max = #FadeColors, Value = FadeCount,
-	Callback = function(v)
-		FadeCount = math.clamp(v, 2, #FadeColors)
-		UI:SetSetting("FadeCount", FadeCount)
-	end
-})
+	-- ---------------- controls ----------------
+	Section.NewToggle({
+		Text = "Color Fade",
+		Callback = function(on)
+			if on then
+				if #S.Parts == 0 and not S.UseAccessory then
+					UI:Notify("Color Fade", "On, but nothing selected yet", 3)
+				else
+					UI:Notify("Color Fade", string.format("%d parts | %s%s", #S.Parts, S.Material,
+						S.UseAccessory and (" | " .. S.AccessoryName) or ""), 3)
+				end
+			end
+			setFade(on)
+		end
+	})
 
-local slotNames = {}
-for i = 1, #FadeColors do slotNames[i] = "Color " .. i end
+	local fadePartsDropdown = Section.NewDropdown({
+		Text = "Fade Parts",
+		Multi = true,
+		Default = S.Parts,
+		Options = PartOptions,
+		Callback = function(selected)
+			S.Parts = cleanParts(selected)   -- deselecting everything is fine
+			UI:SetSetting("FadeParts", S.Parts)
+		end
+	})
 
-local fadePicker
-Section.NewDropdown({
-	Text = "Edit Fade Color",
-	Default = "Color 1",
-	Options = slotNames,
-	Callback = function(opt)
-		fadeSlot = tonumber(opt:match("%d+")) or 1
-		fadePicker.SetColor(FadeColors[fadeSlot])
-	end
-})
+	Section.NewDropdown({
+		Text = "Fade Material",
+		Default = S.Material,
+		Options = MaterialOptions,
+		Callback = function(option)
+			S.Material = option
+			UI:SetSetting("FadeMaterial", option)
+		end
+	})
 
-fadePicker = Section.NewColorPicker({
-	Text = "Fade Color",
-	Default = FadeColors[1],
-	Callback = function(c)
-		FadeColors[fadeSlot] = c   -- live: the loop reads this every frame
-		saveFadeColors()
-	end
-})
+	Section.NewToggle({
+		Text = "Fade Accessory Too",
+		Default = S.UseAccessory,
+		Callback = function(on)
+			S.UseAccessory = on
+			UI:SetSetting("FadeUseAccessory", on)
+		end
+	})
+
+	Section.NewDropdown({
+		Text = "Fade Accessory",
+		Default = S.AccessoryName,
+		Options = AccessoryNames,
+		Callback = function(option)
+			S.AccessoryName = option
+			UI:SetSetting("FadeAccessory", option)
+		end
+	})
+
+	Section.NewSlider({
+		Text = "Fade Time (x0.1s)", Min = 1, Max = 100, Value = S.Tenths,
+		Callback = function(v)
+			S.Tenths = math.max(v, 1)
+			UI:SetSetting("FadeTenths", S.Tenths)
+		end
+	})
+
+	Section.NewSlider({
+		Text = "Colors Used", Min = 2, Max = #S.Colors, Value = S.Count,
+		Callback = function(v)
+			S.Count = math.clamp(v, 2, #S.Colors)
+			UI:SetSetting("FadeCount", S.Count)
+		end
+	})
+
+	local slotNames = {}
+	for i = 1, #S.Colors do slotNames[i] = "Color " .. i end
+
+	local fadePicker
+	Section.NewDropdown({
+		Text = "Edit Fade Color",
+		Default = "Color 1",
+		Options = slotNames,
+		Callback = function(opt)
+			S.Slot = tonumber(opt:match("%d+")) or 1
+			fadePicker.SetColor(S.Colors[S.Slot])
+		end
+	})
+
+	fadePicker = Section.NewColorPicker({
+		Text = "Fade Color",
+		Default = S.Colors[1],
+		Callback = function(c)
+			S.Colors[S.Slot] = c   -- live: the loop reads this every frame
+			saveColors()
+		end
+	})
+end
 
 ------------------------------------------------------------------------
 -- COPY DESIGN
