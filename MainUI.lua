@@ -294,14 +294,16 @@ do
 	local SEND_INTERVAL = 0.1   -- seconds between sends (raise if the game lags)
 	local ACC_TARGETS   = { "Color1", "MeshPart", "Piercing", "Hat" }
 
-	-- only keep names that exist in PartOptions (protects against bad saved data)
-	local validPart = {}
-	for _, n in ipairs(PartOptions) do validPart[n] = true end
-	local function cleanParts(list)
+	-- only keep names that exist in the master lists (protects against bad saved data)
+	local validPart, validAcc = {}, {}
+	for _, n in ipairs(PartOptions)     do validPart[n] = true end
+	for _, n in ipairs(AccessoryNames)  do validAcc[n]  = true end
+
+	local function cleanList(list, valid)
 		local out = {}
 		if type(list) == "table" then
 			for _, n in ipairs(list) do
-				if validPart[n] then table.insert(out, n) end
+				if type(n) == "string" and valid[n] then table.insert(out, n) end
 			end
 		end
 		return out
@@ -313,7 +315,7 @@ do
 			Color3.fromRGB(0, 0, 0), Color3.fromRGB(255, 0, 255), Color3.fromRGB(255, 255, 255),
 			Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 0, 255),
 		},
-		Slot = 1, Phase = 0, SendAcc = 0, Sig = "", Conn = nil,
+		Slot = 1, Phase = 0, SendAcc = 0, Sig = "", Conn = nil, Warned = false,
 	}
 
 	-- load saved settings
@@ -328,16 +330,29 @@ do
 	S.Tenths = math.clamp(tonumber(UI:GetSetting("FadeTenths", 10)) or 10, 1, 100)
 
 	local savedParts = UI:GetSetting("FadeParts")
-	S.Parts        = (savedParts ~= nil) and cleanParts(savedParts) or table.clone(PartOptions)
-	S.Material     = UI:GetSetting("FadeMaterial", "Neon")
-	S.AccessoryName = UI:GetSetting("FadeAccessory", AccessoryNames[1])
-	if not table.find(AccessoryNames, S.AccessoryName) then S.AccessoryName = AccessoryNames[1] end
+	S.Parts = (savedParts ~= nil) and cleanList(savedParts, validPart) or table.clone(PartOptions)
+
+	S.Material = UI:GetSetting("FadeMaterial", "Neon")
+	if type(S.Material) ~= "string" then S.Material = "Neon" end
+
+	-- accessories are now a LIST (new save key; migrates the old single-name save if valid)
+	local savedAcc = UI:GetSetting("FadeAccessories")
+	if savedAcc ~= nil then
+		S.Accessories = cleanList(savedAcc, validAcc)
+	else
+		local old = UI:GetSetting("FadeAccessory")
+		S.Accessories = (type(old) == "string" and validAcc[old]) and { old } or {}
+	end
 	S.UseAccessory = UI:GetSetting("FadeUseAccessory", false) == true
 
 	local function saveColors()
 		local out = {}
 		for i, c in ipairs(S.Colors) do out[i] = Library.EncodeColor(c) end
 		UI:SetSetting("FadeColors", out)
+	end
+
+	local function hasTargets()
+		return #S.Parts > 0 or (S.UseAccessory and #S.Accessories > 0)
 	end
 
 	local function currentColor()
@@ -357,29 +372,27 @@ do
 		local ColorAccessory = events:FindFirstChild("ColorAccessory")
 		local data = { Material = S.Material, MaterialVariant = "" }
 
-		local parts = S.Parts
 		if UpdateColor then
-			for _, partName in ipairs(parts) do
+			for _, partName in ipairs(S.Parts) do
 				UpdateColor:FireServer("Color", partName, color, data)
 			end
 		end
 		if S.UseAccessory and ColorAccessory then
-			local id = table.find(AccessoryNames, S.AccessoryName) or 1
-			for _, target in ipairs(ACC_TARGETS) do
-				ColorAccessory:FireServer("Color", id, target, color, data)
+			for _, accName in ipairs(S.Accessories) do
+				local id = table.find(AccessoryNames, accName)
+				if id then
+					for _, target in ipairs(ACC_TARGETS) do
+						ColorAccessory:FireServer("Color", id, target, color, data)
+					end
+				end
 			end
 		end
 	end
 
-	local function step(dt)
-		S.Phase   = (S.Phase + dt / (S.Tenths / 10)) % S.Count
-		S.SendAcc = S.SendAcc + dt
-		if S.SendAcc < SEND_INTERVAL then return end
-		S.SendAcc = 0
-
-		-- nothing selected: stay on, stay idle, never error
-		if #S.Parts == 0 and not S.UseAccessory then
-			S.Sig = ""
+	-- one tick of work; runs inside pcall so nothing in here can kill the fade
+	local function tick()
+		if not hasTargets() then
+			S.Sig = ""   -- nothing selected: stay on, stay idle
 			return
 		end
 
@@ -390,18 +403,33 @@ do
 
 		-- only send when the color OR the fade's own selections changed
 		local sig = table.concat({
-			r, g, b, S.Material, S.UseAccessory and S.AccessoryName or "-", table.concat(S.Parts, ","),
+			r, g, b, S.Material,
+			S.UseAccessory and table.concat(S.Accessories, ",") or "-",
+			table.concat(S.Parts, ","),
 		}, "|")
 		if sig == S.Sig then return end
 		S.Sig = sig
 
-		local ok, err = pcall(send, color)
-		if not ok then warn("[ColorFade] " .. tostring(err)) end
+		send(color)
+	end
+
+	local function step(dt)
+		S.Phase   = (S.Phase + dt / (S.Tenths / 10)) % S.Count
+		S.SendAcc = S.SendAcc + dt
+		if S.SendAcc < SEND_INTERVAL then return end
+		S.SendAcc = 0
+
+		local ok, err = pcall(tick)
+		if not ok and not S.Warned then
+			S.Warned = true   -- warn once instead of spamming every tick
+			warn("[ColorFade] " .. tostring(err))
+		end
 	end
 
 	local function setFade(on)
 		if on and not S.Conn then
 			S.Sig = ""
+			S.Warned = false
 			S.Conn = RunService.Heartbeat:Connect(step)
 		elseif not on and S.Conn then
 			S.Conn:Disconnect()
@@ -414,15 +442,16 @@ do
 	Section.NewToggle({
 		Text = "Color Fade",
 		Callback = function(on)
+			setFade(on)   -- start/stop first so a notification problem can never block it
 			if on then
-				if #S.Parts == 0 and not S.UseAccessory then
+				if not hasTargets() then
 					UI:Notify("Color Fade", "On, but nothing selected yet", 3)
 				else
-					UI:Notify("Color Fade", string.format("%d parts | %s%s", #S.Parts, S.Material,
-						S.UseAccessory and (" | " .. S.AccessoryName) or ""), 3)
+					local accText = (S.UseAccessory and #S.Accessories > 0)
+						and (" | " .. #S.Accessories .. " accessories") or ""
+					UI:Notify("Color Fade", string.format("%d parts | %s%s", #S.Parts, S.Material, accText), 3)
 				end
 			end
-			setFade(on)
 		end
 	})
 
@@ -432,7 +461,7 @@ do
 		Default = S.Parts,
 		Options = PartOptions,
 		Callback = function(selected)
-			S.Parts = cleanParts(selected)   -- deselecting everything is fine
+			S.Parts = cleanList(selected, validPart)   -- deselecting everything is fine
 			UI:SetSetting("FadeParts", S.Parts)
 		end
 	})
@@ -448,7 +477,7 @@ do
 	})
 
 	Section.NewToggle({
-		Text = "Fade Accessory Too",
+		Text = "Fade Accessories Too",
 		Default = S.UseAccessory,
 		Callback = function(on)
 			S.UseAccessory = on
@@ -457,13 +486,13 @@ do
 	})
 
 	Section.NewDropdown({
-		Text = "Fade Accessory",
+		Text = "Fade Accessories",
 		Multi = true,
-		Default = S.AccessoryName,
+		Default = S.Accessories,
 		Options = AccessoryNames,
-		Callback = function(option)
-			S.AccessoryName = option
-			UI:SetSetting("FadeAccessory", option)
+		Callback = function(selected)
+			S.Accessories = cleanList(selected, validAcc)   -- a list, not a single name
+			UI:SetSetting("FadeAccessories", S.Accessories)
 		end
 	})
 
