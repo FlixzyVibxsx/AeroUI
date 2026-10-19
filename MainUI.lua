@@ -25,9 +25,9 @@ local TweenService      = game:GetService("TweenService")
 local MaterialService   = game:GetService("MaterialService")
 local LocalPlayer       = game:GetService("Players").LocalPlayer
 
-------------------------------------------------------------------------
+-------------------------------------------------------------------------
 -- DATA LISTS
-------------------------------------------------------------------------
+-------------------------------------------------------------------------
 
 -- list order = accessory ID (1..44)
 local AccessoryNames = {
