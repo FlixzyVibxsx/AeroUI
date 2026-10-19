@@ -49,7 +49,7 @@ local PartOptions = {
 	"DragonTip", "OceanTailPrimary", "OceanFin",
 	"DragonSpike1", "DragonSpike2", "DragonSpike3", "DragonSpike4", "DragonSpike5", "DragonSpike6",
 	"DragonSpike7", "DragonSpike8", "DragonSpike9", "DragonSpike10",
-	"DragonClaw1", "DragonClaw2", "DragonClaw3", "DragonClaw4", "DragonDewClaw1", "DragonDewClaw2",
+	"DragonClaws1", "DragonClaws2", "DragonClaws3", "DragonClaws4", "DragonDewClaw1", "DragonDewClaw2",
 	"DragonWingL1", "DragonWingL2", "DragonWingL3", "DragonWingL4", "DragonWingL5",
 	"DragonWingR1", "DragonWingR2", "DragonWingR3", "DragonWingR4", "DragonWingR5",
 	"DragonLSkin1", "DragonLSkin2", "DragonLSkin3", "DragonLSkin4",
