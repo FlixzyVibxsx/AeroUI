@@ -458,6 +458,7 @@ do
 
 	Section.NewDropdown({
 		Text = "Fade Accessory",
+		Multi = true,
 		Default = S.AccessoryName,
 		Options = AccessoryNames,
 		Callback = function(option)
