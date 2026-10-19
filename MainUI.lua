@@ -327,7 +327,7 @@ do
 	S.Tenths = math.clamp(tonumber(UI:GetSetting("FadeTenths", 10)) or 10, 1, 100)
 
 	local savedParts = UI:GetSetting("FadeParts")
-	S.Parts        = (savedParts ~= nil) and cleanParts(savedParts) or table.clone(DEFAULT_PARTS)
+	S.Parts        = (savedParts ~= nil) and cleanParts(savedParts) or table.clone(PartOptions)
 	S.Material     = UI:GetSetting("FadeMaterial", "Neon")
 	S.AccessoryName = UI:GetSetting("FadeAccessory", AccessoryNames[1])
 	if not table.find(AccessoryNames, S.AccessoryName) then S.AccessoryName = AccessoryNames[1] end
