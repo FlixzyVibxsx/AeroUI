@@ -869,6 +869,39 @@ function Library:NewSection(name)
 
     tabBtn.MouseButton1Click:Connect(activateTab)
 
+    -- register this tab so it can be hidden/shown later (used by multi-fade)
+    self.SectionList = self.SectionList or {}
+    local entry = { tab = tabBtn, visible = true, activate = activateTab }
+    table.insert(self.SectionList, entry)
+
+    function section.SetVisible(visible)
+        visible = (visible ~= false)
+        if entry.visible == visible then return end
+        entry.visible = visible
+        tabBtn.Visible = visible
+        if not visible then scroll.Visible = false end
+
+        -- re-pack the visible tab buttons so there are no gaps
+        local y = 8
+        for _, e in ipairs(self.SectionList) do
+            if e.visible then
+                e.tab.Position = UDim2.new(0, 8, 0, y)
+                y = y + 36
+            end
+        end
+        self.TabYOffset = y
+
+        -- if the open tab was just hidden, fall back to the first visible one
+        if not visible and self.CurrentTab == section then
+            for _, e in ipairs(self.SectionList) do
+                if e.visible then
+                    e.activate()
+                    break
+                end
+            end
+        end
+    end
+
     if self.TabYOffset == 44 then activateTab() end
 
     local function makeRow(h)
