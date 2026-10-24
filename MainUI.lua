@@ -329,7 +329,7 @@ Section.NewButton({
 ------------------------------------------------------------------------
 -- COLOR FADES  (up to 4 independent fades, each with its own tab + settings)
 ------------------------------------------------------------------------
-local MAX_FADES = 4
+local MAX_FADES = 5
 local Fades = {}
 
 local function setupFade(index, Section)
