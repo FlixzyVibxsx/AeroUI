@@ -60,17 +60,38 @@ local PartOptions = {
 	"LeftWing2", "LeftWing3", "RightWing2", "RightWing3",
 	"Ocean1Primary", "Ocean1Secondary", "Ocean2Primary", "Ocean2Secondary",
 	"OceanTailSecondary", "OceanDot1", "OceanDot2", "OceanDot3", "OceanDot4",
-	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3", "Neck", "BackFluff", "ChestFluff", "FrontChestFluff", "UpperTooth1",
-	"UpperTooth2", "Tooth3", "Tooth4", "LeftEar", "RightEar", "InsideEars1", "InsideEars2", "RightArmPaw", "LeftArmPaw",
-	"RightFootPaw", "LeftFootPaw", "Claws1", "Claws2", "Claws3", "Claws4",
+	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3", "Neck", "BackFluff", "ChestFluff", "FrontChestFluff",
 }
 
--- every Roblox material, straight from the enum
-local MaterialOptions = {}
-for _, m in ipairs(Enum.Material:GetEnumItems()) do
-	if m.Name ~= "Air" then table.insert(MaterialOptions, m.Name) end
+-- every Roblox material + every custom MaterialVariant in MaterialService
+local VariantInfo = {}   -- label -> { Name = variantName, Base = baseMaterialName }
+
+local function buildMaterialOptions()
+	local opts = {}
+	for _, m in ipairs(Enum.Material:GetEnumItems()) do
+		if m.Name ~= "Air" then table.insert(opts, m.Name) end
+	end
+	table.sort(opts)
+
+	local labels = {}
+	for _, v in ipairs(MaterialService:GetDescendants()) do   -- includes variants inside folders
+		if v:IsA("MaterialVariant") then
+			local ok, base = pcall(function() return v.BaseMaterial.Name end)
+			if ok and base then
+				local label = string.format("%s [%s]", v.Name, base)
+				if not VariantInfo[label] then
+					VariantInfo[label] = { Name = v.Name, Base = base }
+					table.insert(labels, label)
+				end
+			end
+		end
+	end
+	table.sort(labels, function(a, b) return a:lower() < b:lower() end)
+	for _, l in ipairs(labels) do table.insert(opts, l) end
+	return opts
 end
-table.sort(MaterialOptions)
+
+local MaterialOptions = buildMaterialOptions()
 
 ------------------------------------------------------------------------
 -- CREDITS
@@ -183,14 +204,31 @@ local PartsDropdown = Section.NewDropdown({
 	end
 })
 
+local VariantBox   -- assigned below; declared here so the material dropdown can update it
+
+local savedChoice = UI:GetSetting("MaterialChoice")
+local materialDefault = (type(savedChoice) == "string"
+	and (VariantInfo[savedChoice] or table.find(MaterialOptions, savedChoice)))
+	and savedChoice or Material
+
 Section.NewDropdown({
 	Text = "Select Material",
-	Default = Material,
+	Default = materialDefault,
 	Options = MaterialOptions,
 	Callback = function(option)
-		UI:Notify("Material Selected", "You selected: " .. option, 2)
-		Material = option
-		UI:SetSetting("Material", option)
+		local info = VariantInfo[option]
+		if info then
+			Material = info.Base      -- a variant only works on its base material
+			Variant  = info.Name
+		else
+			Material = option
+			Variant  = ""
+		end
+		if VariantBox then VariantBox.SetText(Variant) end
+		UI:SetSetting("MaterialChoice", option)
+		UI:SetSetting("Material", Material)
+		UI:SetSetting("Variant", Variant)
+		UI:Notify("Material Selected", Variant ~= "" and (Variant .. " [" .. Material .. "]") or Material, 2)
 	end
 })
 
@@ -295,16 +333,14 @@ do
 	local SEND_INTERVAL = 0.1   -- seconds between sends (raise if the game lags)
 	local ACC_TARGETS   = { "Color1", "MeshPart", "Piercing", "Hat" }
 
-	-- only keep names that exist in the master lists (protects against bad saved data)
-	local validPart, validAcc = {}, {}
-	for _, n in ipairs(PartOptions)     do validPart[n] = true end
-	for _, n in ipairs(AccessoryNames)  do validAcc[n]  = true end
-
-	local function cleanList(list, valid)
+	-- only keep names that exist in PartOptions (protects against bad saved data)
+	local validPart = {}
+	for _, n in ipairs(PartOptions) do validPart[n] = true end
+	local function cleanParts(list)
 		local out = {}
 		if type(list) == "table" then
 			for _, n in ipairs(list) do
-				if type(n) == "string" and valid[n] then table.insert(out, n) end
+				if validPart[n] then table.insert(out, n) end
 			end
 		end
 		return out
@@ -316,7 +352,7 @@ do
 			Color3.fromRGB(0, 0, 0), Color3.fromRGB(255, 0, 255), Color3.fromRGB(255, 255, 255),
 			Color3.fromRGB(255, 0, 0), Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 0, 255),
 		},
-		Slot = 1, Phase = 0, SendAcc = 0, Sig = "", Conn = nil, Warned = false,
+		Slot = 1, Phase = 0, SendAcc = 0, Sig = "", Conn = nil,
 	}
 
 	-- load saved settings
@@ -331,29 +367,18 @@ do
 	S.Tenths = math.clamp(tonumber(UI:GetSetting("FadeTenths", 10)) or 10, 1, 100)
 
 	local savedParts = UI:GetSetting("FadeParts")
-	S.Parts = (savedParts ~= nil) and cleanList(savedParts, validPart) or table.clone(PartOptions)
-
-	S.Material = UI:GetSetting("FadeMaterial", "Neon")
-	if type(S.Material) ~= "string" then S.Material = "Neon" end
-
-	-- accessories are now a LIST (new save key; migrates the old single-name save if valid)
-	local savedAcc = UI:GetSetting("FadeAccessories")
-	if savedAcc ~= nil then
-		S.Accessories = cleanList(savedAcc, validAcc)
-	else
-		local old = UI:GetSetting("FadeAccessory")
-		S.Accessories = (type(old) == "string" and validAcc[old]) and { old } or {}
-	end
+	S.Parts        = (savedParts ~= nil) and cleanParts(savedParts) or table.clone(PartOptions)
+	S.Material     = UI:GetSetting("FadeMaterial", "Neon")
+	S.Variant = UI:GetSetting("FadeVariant", "")
+	if type(S.Variant) ~= "string" then S.Variant = "" end
+	S.AccessoryName = UI:GetSetting("FadeAccessory", AccessoryNames[1])
+	if not table.find(AccessoryNames, S.AccessoryName) then S.AccessoryName = AccessoryNames[1] end
 	S.UseAccessory = UI:GetSetting("FadeUseAccessory", false) == true
 
 	local function saveColors()
 		local out = {}
 		for i, c in ipairs(S.Colors) do out[i] = Library.EncodeColor(c) end
 		UI:SetSetting("FadeColors", out)
-	end
-
-	local function hasTargets()
-		return #S.Parts > 0 or (S.UseAccessory and #S.Accessories > 0)
 	end
 
 	local function currentColor()
@@ -371,29 +396,31 @@ do
 		if not events then return end
 		local UpdateColor    = events:FindFirstChild("UpdateColor")
 		local ColorAccessory = events:FindFirstChild("ColorAccessory")
-		local data = { Material = S.Material, MaterialVariant = "" }
+		local data = { Material = S.Material, MaterialVariant = S.Variant }
 
+		local parts = S.Parts
 		if UpdateColor then
-			for _, partName in ipairs(S.Parts) do
+			for _, partName in ipairs(parts) do
 				UpdateColor:FireServer("Color", partName, color, data)
 			end
 		end
 		if S.UseAccessory and ColorAccessory then
-			for _, accName in ipairs(S.Accessories) do
-				local id = table.find(AccessoryNames, accName)
-				if id then
-					for _, target in ipairs(ACC_TARGETS) do
-						ColorAccessory:FireServer("Color", id, target, color, data)
-					end
-				end
+			local id = table.find(AccessoryNames, S.AccessoryName) or 1
+			for _, target in ipairs(ACC_TARGETS) do
+				ColorAccessory:FireServer("Color", id, target, color, data)
 			end
 		end
 	end
 
-	-- one tick of work; runs inside pcall so nothing in here can kill the fade
-	local function tick()
-		if not hasTargets() then
-			S.Sig = ""   -- nothing selected: stay on, stay idle
+	local function step(dt)
+		S.Phase   = (S.Phase + dt / (S.Tenths / 10)) % S.Count
+		S.SendAcc = S.SendAcc + dt
+		if S.SendAcc < SEND_INTERVAL then return end
+		S.SendAcc = 0
+
+		-- nothing selected: stay on, stay idle, never error
+		if #S.Parts == 0 and not S.UseAccessory then
+			S.Sig = ""
 			return
 		end
 
@@ -404,33 +431,18 @@ do
 
 		-- only send when the color OR the fade's own selections changed
 		local sig = table.concat({
-			r, g, b, S.Material,
-			S.UseAccessory and table.concat(S.Accessories, ",") or "-",
-			table.concat(S.Parts, ","),
+			r, g, b, S.Material, S.Variant, S.UseAccessory and S.AccessoryName or "-", table.concat(S.Parts, ","),
 		}, "|")
 		if sig == S.Sig then return end
 		S.Sig = sig
 
-		send(color)
-	end
-
-	local function step(dt)
-		S.Phase   = (S.Phase + dt / (S.Tenths / 10)) % S.Count
-		S.SendAcc = S.SendAcc + dt
-		if S.SendAcc < SEND_INTERVAL then return end
-		S.SendAcc = 0
-
-		local ok, err = pcall(tick)
-		if not ok and not S.Warned then
-			S.Warned = true   -- warn once instead of spamming every tick
-			warn("[ColorFade] " .. tostring(err))
-		end
+		local ok, err = pcall(send, color)
+		if not ok then warn("[ColorFade] " .. tostring(err)) end
 	end
 
 	local function setFade(on)
 		if on and not S.Conn then
 			S.Sig = ""
-			S.Warned = false
 			S.Conn = RunService.Heartbeat:Connect(step)
 		elseif not on and S.Conn then
 			S.Conn:Disconnect()
@@ -443,16 +455,15 @@ do
 	Section.NewToggle({
 		Text = "Color Fade",
 		Callback = function(on)
-			setFade(on)   -- start/stop first so a notification problem can never block it
 			if on then
-				if not hasTargets() then
+				if #S.Parts == 0 and not S.UseAccessory then
 					UI:Notify("Color Fade", "On, but nothing selected yet", 3)
 				else
-					local accText = (S.UseAccessory and #S.Accessories > 0)
-						and (" | " .. #S.Accessories .. " accessories") or ""
-					UI:Notify("Color Fade", string.format("%d parts | %s%s", #S.Parts, S.Material, accText), 3)
+					UI:Notify("Color Fade", string.format("%d parts | %s%s", #S.Parts, S.Material,
+						S.UseAccessory and (" | " .. S.AccessoryName) or ""), 3)
 				end
 			end
+			setFade(on)
 		end
 	})
 
@@ -462,23 +473,27 @@ do
 		Default = S.Parts,
 		Options = PartOptions,
 		Callback = function(selected)
-			S.Parts = cleanList(selected, validPart)   -- deselecting everything is fine
+			S.Parts = cleanParts(selected)   -- deselecting everything is fine
 			UI:SetSetting("FadeParts", S.Parts)
 		end
 	})
 
 	Section.NewDropdown({
 		Text = "Fade Material",
-		Default = S.Material,
+		Default = UI:GetSetting("FadeMaterialChoice", S.Material),
 		Options = MaterialOptions,
 		Callback = function(option)
-			S.Material = option
-			UI:SetSetting("FadeMaterial", option)
+			local info = VariantInfo[option]
+			S.Material = info and info.Base or option
+			S.Variant  = info and info.Name or ""
+			UI:SetSetting("FadeMaterialChoice", option)
+			UI:SetSetting("FadeMaterial", S.Material)
+			UI:SetSetting("FadeVariant", S.Variant)
 		end
 	})
 
 	Section.NewToggle({
-		Text = "Fade Accessories Too",
+		Text = "Fade Accessory Too",
 		Default = S.UseAccessory,
 		Callback = function(on)
 			S.UseAccessory = on
@@ -487,13 +502,12 @@ do
 	})
 
 	Section.NewDropdown({
-		Text = "Fade Accessories",
-		Multi = true,
-		Default = S.Accessories,
+		Text = "Fade Accessory",
+		Default = S.AccessoryName,
 		Options = AccessoryNames,
-		Callback = function(selected)
-			S.Accessories = cleanList(selected, validAcc)   -- a list, not a single name
-			UI:SetSetting("FadeAccessories", S.Accessories)
+		Callback = function(option)
+			S.AccessoryName = option
+			UI:SetSetting("FadeAccessory", option)
 		end
 	})
 
