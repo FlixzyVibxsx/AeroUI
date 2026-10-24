@@ -60,7 +60,9 @@ local PartOptions = {
 	"LeftWing2", "LeftWing3", "RightWing2", "RightWing3",
 	"Ocean1Primary", "Ocean1Secondary", "Ocean2Primary", "Ocean2Secondary",
 	"OceanTailSecondary", "OceanDot1", "OceanDot2", "OceanDot3", "OceanDot4",
-	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3", "Neck", "BackFluff", "ChestFluff", "FrontChestFluff",
+	"OceanSecondary1", "OceanSecondary2", "OceanSecondary3", "Neck", "BackFluff", "ChestFluff", "FrontChestFluff", "UpperTooth1",
+	"UpperTooth2", "Tooth3", "Tooth4", "LeftEar", "RightEar", "InsideEars1", "InsideEars2", "RightArmPaw", "LeftArmPaw",
+	"RightFootPaw", "LeftFootPaw", "Claws1", "Claws2", "Claws3", "Claws4",
 }
 
 -- every Roblox material + every custom MaterialVariant in MaterialService
