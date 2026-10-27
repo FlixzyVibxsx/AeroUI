@@ -327,7 +327,7 @@ Section.NewButton({
 })
 
 ------------------------------------------------------------------------
--- COLOR FADES  (up to 4 independent fades, each with its own tab + settings)
+-- COLOR FADES  (up to 5 independent fades, each with its own tab + settings)
 ------------------------------------------------------------------------
 local MAX_FADES = 5
 local Fades = {}
@@ -655,13 +655,13 @@ local function applyFadeNumber(n)
 end
 
 Section.NewParagraph({
-	"Run up to 4 fades at once.",
+	"Run up to 5 fades at once.",
 	"Each one gets its own tab with its own parts, material, accessories and colors.",
 	"Give each fade different parts - if two share a part, the last update wins.",
 })
 
 Section.NewSlider({
-	Text = "Number of Fades (max 4)", Min = 1, Max = MAX_FADES, Value = FadeNumber,
+	Text = "Number of Fades (max 5)", Min = 1, Max = MAX_FADES, Value = FadeNumber,
 	Callback = function(v)
 		FadeNumber = v
 		UI:SetSetting("FadeNumber", v)
