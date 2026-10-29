@@ -29,7 +29,6 @@ local LocalPlayer       = game:GetService("Players").LocalPlayer
 -- DATA LISTS
 -------------------------------------------------------------------------
 
--- list order = accessory ID (1..44)
 local AccessoryNames = {
 	"Slider Bracelets", "Cross Bracelets", "Leaves", "Winter Boots", "Double Bracelets", "Curly", "Punk",
 	"Lonely Woof", "Swiped Back", "Braided", "Long", "Ewooftional", "Long Straight", "Bed Head", "Short Spiky",
@@ -65,8 +64,7 @@ local PartOptions = {
 	"RightFootPaw", "LeftFootPaw", "Claws1", "Claws2", "Claws3", "Claws4",
 }
 
--- every Roblox material + every custom MaterialVariant in MaterialService
-local VariantInfo = {}   -- label -> { Name = variantName, Base = baseMaterialName }
+local VariantInfo = {}
 
 local function buildMaterialOptions()
 	local opts = {}
@@ -76,7 +74,7 @@ local function buildMaterialOptions()
 	table.sort(opts)
 
 	local labels = {}
-	for _, v in ipairs(MaterialService:GetDescendants()) do   -- includes variants inside folders
+	for _, v in ipairs(MaterialService:GetDescendants()) do
 		if v:IsA("MaterialVariant") then
 			local ok, base = pcall(function() return v.BaseMaterial.Name end)
 			if ok and base then
@@ -144,7 +142,6 @@ Section.NewButton({
 ------------------------------------------------------------------------
 local Section = UI:NewSection("Customization")
 
--- saved / default values (all of these persist between sessions)
 local chosenColor   = Library.DecodeColor(UI:GetSetting("Color")) or Color3.fromRGB(0, 0, 0)
 local Material      = UI:GetSetting("Material", "Neon")
 local Parts         = UI:GetSetting("Parts", { "EyeColor1" })
@@ -153,7 +150,6 @@ local Value         = table.find(AccessoryNames, AccessoryName) or 1
 local Variant       = UI:GetSetting("Variant", "")
 if type(Parts) ~= "table" then Parts = { "EyeColor1" } end
 
--- ---- material variant helpers ----
 local function listVariants()
 	local names, seen = {}, {}
 	for _, v in ipairs(MaterialService:GetDescendants()) do
@@ -165,7 +161,6 @@ local function listVariants()
 	return names
 end
 
--- returns variantName, baseMaterialName for a colormap ID (e.g. 123456 or "rbxassetid://123456")
 local function findVariantByColorMap(id)
 	local want = tostring(id):match("%d+")
 	if not want then return nil end
@@ -206,7 +201,7 @@ local PartsDropdown = Section.NewDropdown({
 	end
 })
 
-local VariantBox   -- assigned below; declared here so the material dropdown can update it
+local VariantBox
 
 local savedChoice = UI:GetSetting("MaterialChoice")
 local materialDefault = (type(savedChoice) == "string"
@@ -220,7 +215,7 @@ Section.NewDropdown({
 	Callback = function(option)
 		local info = VariantInfo[option]
 		if info then
-			Material = info.Base      -- a variant only works on its base material
+			Material = info.Base
 			Variant  = info.Name
 		else
 			Material = option
@@ -261,7 +256,7 @@ Section.NewButton({
 				return
 			end
 			Variant = name
-			Material = base              -- a variant only works on its base material
+			Material = base
 			UI:SetSetting("Material", base)
 			VariantBox.SetText(name)
 			UI:Notify("Variant", name .. " (" .. base .. ")", 3)
@@ -333,11 +328,10 @@ local MAX_FADES = 5
 local Fades = {}
 
 local function setupFade(index, Section)
-	-- fade 1 keeps the original "Fade..." save keys so your existing settings carry over
 	local P   = (index == 1) and "Fade" or ("Fade" .. index)
 	local tag = "Fade " .. index
 
-	local SEND_INTERVAL = 0.1   -- seconds between sends for this fade (raise if the game lags)
+	local SEND_INTERVAL = 0.1
 	local ACC_TARGETS   = { "Color1", "MeshPart", "Piercing", "Hat" }
 
 	local validPart, validAcc = {}, {}
@@ -354,7 +348,6 @@ local function setupFade(index, Section)
 		return out
 	end
 
-	-- a different starting palette per fade so they're easy to tell apart
 	local palettes = {
 		{ Color3.fromRGB(0, 0, 0),     Color3.fromRGB(255, 0, 255),   Color3.fromRGB(255, 255, 255) },
 		{ Color3.fromRGB(0, 60, 255),  Color3.fromRGB(0, 255, 255),   Color3.fromRGB(255, 255, 255) },
@@ -363,7 +356,6 @@ local function setupFade(index, Section)
 	}
 	local pal = palettes[index] or palettes[1]
 
-	-- all state for THIS fade lives here; no other fade or tab touches it
 	local S = {
 		Colors = {
 			pal[1], pal[2], pal[3],
@@ -372,7 +364,6 @@ local function setupFade(index, Section)
 		Slot = 1, Phase = 0, SendAcc = 0, Sig = "", Conn = nil, Warned = false,
 	}
 
-	-- load saved settings
 	local savedColors = UI:GetSetting(P .. "Colors")
 	if type(savedColors) == "table" then
 		for i = 1, #S.Colors do
@@ -383,7 +374,6 @@ local function setupFade(index, Section)
 	S.Count  = math.clamp(tonumber(UI:GetSetting(P .. "Count", 3)) or 3, 2, #S.Colors)
 	S.Tenths = math.clamp(tonumber(UI:GetSetting(P .. "Tenths", 10)) or 10, 1, 100)
 
-	-- fade 1 defaults to every part; extra fades start empty so they don't fight over parts
 	local savedParts = UI:GetSetting(P .. "Parts")
 	if savedParts ~= nil then
 		S.Parts = cleanList(savedParts, validPart)
@@ -449,10 +439,9 @@ local function setupFade(index, Section)
 		end
 	end
 
-	-- one tick of work; runs inside pcall so nothing in here can kill the fade
 	local function tick()
 		if not hasTargets() then
-			S.Sig = ""   -- nothing selected: stay on, stay idle
+			S.Sig = ""
 			return
 		end
 
@@ -461,7 +450,6 @@ local function setupFade(index, Section)
 		local g = math.floor(color.G * 255 + 0.5)
 		local b = math.floor(color.B * 255 + 0.5)
 
-		-- only send when the color OR this fade's own selections changed
 		local sig = table.concat({
 			r, g, b, S.Material, S.Variant,
 			S.UseAccessory and table.concat(S.Accessories, ",") or "-",
@@ -481,7 +469,7 @@ local function setupFade(index, Section)
 
 		local ok, err = pcall(tick)
 		if not ok and not S.Warned then
-			S.Warned = true   -- warn once instead of spamming every tick
+			S.Warned = true
 			warn("[" .. tag .. "] " .. tostring(err))
 		end
 	end
@@ -498,7 +486,6 @@ local function setupFade(index, Section)
 	end
 	UI.ScreenGui.Destroying:Connect(function() setFade(false) end)
 
-	-- ---------------- controls (built on first use) ----------------
 	local toggle
 	local built = false
 
@@ -509,7 +496,7 @@ local function setupFade(index, Section)
 		toggle = Section.NewToggle({
 			Text = tag,
 			Callback = function(on)
-				setFade(on)   -- start/stop first so a notification problem can never block it
+				setFade(on)
 				if on then
 					if not hasTargets() then
 						UI:Notify(tag, "On, but nothing selected yet", 3)
@@ -529,7 +516,7 @@ local function setupFade(index, Section)
 			Default = S.Parts,
 			Options = PartOptions,
 			Callback = function(selected)
-				S.Parts = cleanList(selected, validPart)   -- deselecting everything is fine
+				S.Parts = cleanList(selected, validPart)
 				UI:SetSetting(P .. "Parts", S.Parts)
 			end
 		})
@@ -602,18 +589,17 @@ local function setupFade(index, Section)
 			Text = "Fade Color",
 			Default = S.Colors[1],
 			Callback = function(c)
-				S.Colors[S.Slot] = c   -- live: the loop reads this every frame
+				S.Colors[S.Slot] = c
 				saveColors()
 			end
 		})
 	end
 
-	-- ---------------- handle used by the Multi Fade tab ----------------
 	local api = {}
 
 	function api.Stop()
 		setFade(false)
-		if toggle then toggle.Set(false, true) end   -- silent: no callback
+		if toggle then toggle.Set(false, true) end
 	end
 
 	function api.Show()
@@ -630,15 +616,12 @@ local function setupFade(index, Section)
 	return api
 end
 
--- Fade 1 lives in the existing "Color Fade" tab and is always available
 local Section = UI:NewSection("Color Fade")
 Fades[1] = setupFade(1, Section)
 Fades[1].Build()
 
--- Control tab: how many fades are active
 local Section = UI:NewSection("Multi Fade")
 
--- Fades 2-4: tabs are created now (so they sit next to Color Fade) but start hidden
 for i = 2, MAX_FADES do
 	local sec = UI:NewSection("Color Fade " .. i)
 	Fades[i] = setupFade(i, sec)
@@ -650,7 +633,7 @@ local FadeNumber = math.clamp(tonumber(UI:GetSetting("FadeNumber", 1)) or 1, 1, 
 local function applyFadeNumber(n)
 	n = math.clamp(n, 1, MAX_FADES)
 	for i = 2, MAX_FADES do
-		if i <= n then Fades[i].Show() else Fades[i].Hide() end   -- Hide also stops that fade
+		if i <= n then Fades[i].Show() else Fades[i].Hide() end
 	end
 end
 
@@ -685,7 +668,7 @@ applyFadeNumber(FadeNumber)
 local Section = UI:NewSection("Copy Design")
 
 local ACCESSORY_TARGETS = { "Color1", "MeshPart", "Piercing", "Hat" }
-local ROOT_NAMES        = { "PlayerCharacters", "Customizing" }  -- spawned / still customizing
+local ROOT_NAMES        = { "PlayerCharacters", "Customizing" }
 local NameBox
 
 local function getRoots()
@@ -725,7 +708,6 @@ local function partData(p)
 	return { C = Library.EncodeColor(p.Color), M = p.Material.Name, V = p.MaterialVariant }
 end
 
--- read a model into a plain table (also what gets saved for OCs)
 local function readModel(model)
 	local snap = { Parts = {}, Accessories = {} }
 	local nParts, nAcc = 0, 0
@@ -770,7 +752,6 @@ local function readModel(model)
 	return snap, nParts, nAcc
 end
 
--- send a snapshot to the game
 local function applySnapshot(snap, doParts, doAcc)
 	local nParts, nAcc, sent = 0, 0, 0
 	local function pace()
@@ -886,7 +867,7 @@ local function trim(s) return (string.gsub(s, "^%s*(.-)%s*$", "%1")) end
 local OCBox = Section.NewAutoTextBox({
 	Text = "OC Name",
 	Placeholder = "Name your OC...",
-	SnapOnEnter = false,   -- so a new name isn't snapped onto an old one
+	SnapOnEnter = false,
 	GetOptions = function()
 		local names = {}
 		for name in pairs(getOCs()) do table.insert(names, name) end
@@ -914,7 +895,7 @@ Section.NewButton({
 		end
 
 		local ocs = getOCs()
-		for existing in pairs(ocs) do   -- overwrite same name regardless of case
+		for existing in pairs(ocs) do
 			if string.lower(existing) == string.lower(name) then ocs[existing] = nil end
 		end
 		snap.Saved = os.time()
@@ -1025,7 +1006,7 @@ Section.NewButton({
 Section.NewButton({
 	Text = "Reset Saved Settings",
 	Callback = function()
-		UI:ClearSettings({ "OCs" })   -- keeps your saved OCs
+		UI:ClearSettings({ "OCs" })
 		UI:ResetTheme()
 		syncPicker()
 		UI:Notify("Reset", "Settings cleared (OCs kept)", 2)
